@@ -1,10 +1,5 @@
 PACKAGES=$(shell go list ./...)
 OUTPUT?=build/tendermint
-
-<<<<<<< HEAD
-=======
-INCLUDE = -I=${GOPATH}/src/github.com/tendermint/tendermint -I=${GOPATH}/src -I="${GOPATH}/pkg/mod/github.com/gogo/protobuf@v1.3.1"
->>>>>>> attempt 1
 BUILD_TAGS?='tendermint'
 LD_FLAGS = -X github.com/tendermint/tendermint/version.GitCommit=`git rev-parse --short=8 HEAD` -s -w
 BUILD_FLAGS = -mod=readonly -ldflags "$(LD_FLAGS)"
