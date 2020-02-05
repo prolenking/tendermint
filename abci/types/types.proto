@@ -104,6 +104,28 @@ message RequestEndBlock {
 message RequestCommit {
 }
 
+// lists available snapshots
+message RequestListSnapshots {
+}
+
+// offers a snapshot to the application
+message RequestOfferSnapshot {
+  repeated Snapshot snapshots = 1;
+}
+
+// fetches a snapshot chunk
+message RequestGetSnapshotChunk {
+  uint64 height = 1;
+  uint32 format = 2;
+  uint64 chunk = 3;
+}
+
+// Applies a snapshot chunk
+message RequestApplySnapshotChunk {
+  SnapshotChunk chunk = 1;
+  bytes chain_hash = 2;
+}
+
 //----------------------------------------
 // Response types
 
@@ -208,6 +230,32 @@ message ResponseCommit {
   // reserve 1
   bytes data = 2;
 }
+
+message ResponseListSnapshots {
+  repeated Snapshot snapshots = 1;
+}
+
+message ResponseOfferSnapshot {
+  bool accepted = 1;
+  enum reason {             // Reason why snapshot was rejected
+      unknown = 0;          // Unknown or generic reason
+      invalid_height = 1;   // Height is rejected: avoid this height
+      invalid_format = 2;   // Format is rejected: avoid this format
+  }
+}
+
+message ResponseGetSnapshotChunk {
+  SnapshotChunk chunk = 1;
+}
+
+message ResponseApplySnapshotChunk {
+  bool applied = 1;
+  enum reason {           // Reason why chunk failed
+      unknown = 0;        // Unknown or generic reason
+      verify_failed = 1;  // Chunk verification failed
+  }
+}
+
 
 //----------------------------------------
 // Misc.
@@ -325,6 +373,25 @@ message Evidence {
   google.protobuf.Timestamp time = 4 [(gogoproto.nullable)=false, (gogoproto.stdtime)=true];
   int64 total_voting_power = 5;
 }
+
+//----------------------------------------
+// State Sync Types
+
+message Snapshot {
+  uint64 height = 1;   // The height at which the snapshot was taken
+  uint32 format = 2;   // The application-specific snapshot format
+  uint64 chunks = 3;   // The number of chunks in the snapshot
+  bytes metadata = 4;  // Arbitrary application metadata
+}
+
+message SnapshotChunk {
+  uint64 height = 1;   // The height of the corresponding snapshot
+  uint32 format = 2;   // The application-specific snapshot format
+  uint64 chunk = 3;    // The chunk index (zero-based)
+  bytes data = 4;      // Serialized application state in an arbitrary format
+  bytes checksum = 5;  // SHA-1 checksum of data
+}
+
 
 //----------------------------------------
 // Service Definition
