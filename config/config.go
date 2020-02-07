@@ -65,6 +65,7 @@ type Config struct {
 	RPC             *RPCConfig             `mapstructure:"rpc"`
 	P2P             *P2PConfig             `mapstructure:"p2p"`
 	Mempool         *MempoolConfig         `mapstructure:"mempool"`
+	StateSync       *StateSyncConfig       `mapstructure:"statesync"`
 	FastSync        *FastSyncConfig        `mapstructure:"fastsync"`
 	Consensus       *ConsensusConfig       `mapstructure:"consensus"`
 	TxIndex         *TxIndexConfig         `mapstructure:"tx_index"`
@@ -78,6 +79,7 @@ func DefaultConfig() *Config {
 		RPC:             DefaultRPCConfig(),
 		P2P:             DefaultP2PConfig(),
 		Mempool:         DefaultMempoolConfig(),
+		StateSync:       DefaultStateSyncConfig(),
 		FastSync:        DefaultFastSyncConfig(),
 		Consensus:       DefaultConsensusConfig(),
 		TxIndex:         DefaultTxIndexConfig(),
@@ -92,6 +94,7 @@ func TestConfig() *Config {
 		RPC:             TestRPCConfig(),
 		P2P:             TestP2PConfig(),
 		Mempool:         TestMempoolConfig(),
+		StateSync:       TestStateSyncConfig(),
 		FastSync:        TestFastSyncConfig(),
 		Consensus:       TestConsensusConfig(),
 		TxIndex:         TestTxIndexConfig(),
@@ -123,6 +126,9 @@ func (cfg *Config) ValidateBasic() error {
 	}
 	if err := cfg.Mempool.ValidateBasic(); err != nil {
 		return errors.Wrap(err, "Error in [mempool] section")
+	}
+	if err := cfg.StateSync.ValidateBasic(); err != nil {
+		return errors.Wrap(err, "Error in [statesync] section")
 	}
 	if err := cfg.FastSync.ValidateBasic(); err != nil {
 		return errors.Wrap(err, "Error in [fastsync] section")
@@ -737,6 +743,31 @@ func (cfg *FastSyncConfig) ValidateBasic() error {
 	default:
 		return fmt.Errorf("unknown fastsync version %s", cfg.Version)
 	}
+}
+
+//-----------------------------------------------------------------------------
+// StateSyncConfig
+
+// StateSyncConfig defines the configuration for the Tendermint state sync service
+type StateSyncConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// DefaultStateSyncConfig returns a default configuration for the state sync service
+func DefaultStateSyncConfig() *StateSyncConfig {
+	return &StateSyncConfig{
+		Enabled: true,
+	}
+}
+
+// TestFastSyncConfig returns a default configuration for the state sync service
+func TestStateSyncConfig() *StateSyncConfig {
+	return DefaultStateSyncConfig()
+}
+
+// ValidateBasic performs basic validation.
+func (cfg *StateSyncConfig) ValidateBasic() error {
+	return nil
 }
 
 //-----------------------------------------------------------------------------

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -132,6 +133,11 @@ func TestFastSyncConfigValidateBasic(t *testing.T) {
 
 	cfg.Version = "invalid"
 	assert.Error(t, cfg.ValidateBasic())
+}
+
+func TestStateSyncConfigValidateBasic(t *testing.T) {
+	cfg := TestStateSyncConfig()
+	require.NoError(t, cfg.ValidateBasic())
 }
 
 func TestConsensusConfigValidateBasic(t *testing.T) {

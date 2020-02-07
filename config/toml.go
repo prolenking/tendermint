@@ -315,6 +315,13 @@ cache_size = {{ .Mempool.CacheSize }}
 # NOTE: the max size of a tx transmitted over the network is {max_tx_bytes} + {amino overhead}.
 max_tx_bytes = {{ .Mempool.MaxTxBytes }}
 
+##### state sync configuration options #####
+[statesync]
+# Whether to enable state sync, which downloads a recent snapshot of the state machine
+# without fetching and replaying historical blocks (if available), then switches to fast sync
+# for the remaining blocks.
+enabled = {{ .StateSync.Enabled }}
+
 ##### fast sync configuration options #####
 [fastsync]
 
