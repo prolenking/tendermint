@@ -208,3 +208,27 @@ func ToResponseEndBlock(res ResponseEndBlock) *Response {
 		Value: &Response_EndBlock{&res},
 	}
 }
+
+func ToResponseListSnapshots(res ResponseListSnapshots) *Response {
+	return &Response{
+		Value: &Response_ListSnapshots{&res},
+	}
+}
+
+func ToResponseOfferSnapshot(res ResponseOfferSnapshot) *Response {
+	return &Response{
+		Value: &Response_OfferSnapshot{&res},
+	}
+}
+
+func ToResponseGetSnapshotChunk(res ResponseGetSnapshotChunk) *Response {
+	return &Response{
+		Value: &Response_GetSnapshotChunk{&res},
+	}
+}
+
+func ToResponseApplySnapshotChunk(res ResponseApplySnapshotChunk) *Response {
+	return &Response{
+		Value: &Response_ApplySnapshotChunk{&res},
+	}
+}
