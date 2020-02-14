@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"io"
+	"math/big"
 
 	"github.com/tjfoc/gmsm/sm2"
 
@@ -13,13 +14,22 @@ import (
 	"github.com/tendermint/tendermint/crypto/tmhash"
 )
 
-var _ crypto.PrivKey = PrivKeySm2{}
-var _ crypto.PubKey = PubKeySm2{}
-
 const (
 	PrivKeyAminoName = "tendermint/PrivKeySm2"
 	PubKeyAminoName  = "tendermint/PubKeySm2"
+
+	PrivKeySize   = 32
+	PubKeySize    = 33
+	SignatureSize = 64
 )
+
+type PrivKeySm2 [PrivKeySize]byte
+type PubKeySm2 [PubKeySize]byte
+
+var _ crypto.PrivKey = PrivKeySm2{}
+var _ crypto.PubKey = PubKeySm2{}
+
+// --------------------------------------------------------
 
 var cdc = amino.NewCodec()
 
@@ -33,34 +43,51 @@ func init() {
 
 // --------------------------------------------------------
 
-type PrivKeySm2 struct {
-	sm2.PrivateKey
-}
-
 func (privKey PrivKeySm2) Bytes() []byte {
 	return cdc.MustMarshalBinaryBare(privKey)
 }
 
 func (privKey PrivKeySm2) Sign(msg []byte) ([]byte, error) {
-	r, s, err := sm2.Sign(&privKey.PrivateKey, msg)
+	priv := privKey.GetPrivateKey()
+	r, s, err := sm2.Sign(priv, msg)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
+	R := r.Bytes()
+	S := s.Bytes()
+	sig := make([]byte, 64)
+	copy(sig[:32], R[:])
+	copy(sig[32:], S[:])
 
-	return sm2.SignDigitToSignData(r, s)
+	return sig, nil
 }
 
 func (privKey PrivKeySm2) PubKey() crypto.PubKey {
-	return PubKeySm2{privKey.PrivateKey.PublicKey}
+	priv := privKey.GetPrivateKey()
+	compPubkey := sm2.Compress(&priv.PublicKey)
+	var pubKey PubKeySm2
+	copy(pubKey[:], compPubkey)
+
+	return pubKey
 }
 
 func (privKey PrivKeySm2) Equals(other crypto.PrivKey) bool {
 	if otherSm2, ok := other.(PrivKeySm2); ok {
-		// TODO
-		return subtle.ConstantTimeCompare(privKey.Bytes(), otherSm2.Bytes()) == 1
+		return subtle.ConstantTimeCompare(privKey[:], otherSm2[:]) == 1
 	}
-
+	
 	return false
+}
+
+func (privKey PrivKeySm2) GetPrivateKey() *sm2.PrivateKey {
+	k := new(big.Int).SetBytes(privKey[:32])
+	c := sm2.P256Sm2()
+	priv := new(sm2.PrivateKey)
+	priv.PublicKey.Curve = c
+	priv.D = k
+	priv.PublicKey.X, priv.PublicKey.Y = c.ScalarBaseMult(k.Bytes())
+
+	return priv
 }
 
 func GenPrivKey() PrivKeySm2 {
@@ -78,17 +105,16 @@ func genPrivKey(rand io.Reader) PrivKeySm2 {
 		panic(err)
 	}
 
-	return PrivKeySm2{*privKey}
+	var privKeySm2 PrivKeySm2
+	copy(privKeySm2[:], privKey.D.Bytes())
+
+	return privKeySm2
 }
 
 // --------------------------------------------------------
 
-type PubKeySm2 struct {
-	sm2.PublicKey
-}
-
 func (pubKey PubKeySm2) Address() crypto.Address {
-	return crypto.Address(tmhash.SumTruncated(sm2.Compress(&pubKey.PublicKey)))
+	return crypto.Address(tmhash.SumTruncated(pubKey[:]))
 }
 
 func (pubKey PubKeySm2) Bytes() []byte {
@@ -96,22 +122,24 @@ func (pubKey PubKeySm2) Bytes() []byte {
 }
 
 func (pubKey PubKeySm2) VerifyBytes(msg []byte, sig []byte) bool {
-	r, s, err := sm2.SignDataToSignDigit(sig)
-	if err != nil {
-		panic(err)
+	if len(sig) != SignatureSize {
+		return false
 	}
 
-	return sm2.Verify(&pubKey.PublicKey, msg, r, s)
+	pubKeyBytes := sm2.Decompress(pubKey[:])
+	r := new(big.Int).SetBytes(sig[:32])
+	s := new(big.Int).SetBytes(sig[32:])
+
+	return sm2.Verify(pubKeyBytes, msg, r, s)
 }
 
 func (pubKey PubKeySm2) String() string {
-	return fmt.Sprintf("PubKeySm2{%X}", sm2.Compress(&pubKey.PublicKey))
+	return fmt.Sprintf("PubKeySm2{%X}", pubKey[:])
 }
 
 func (pubKey PubKeySm2) Equals(other crypto.PubKey) bool {
-	// TODO
 	if otherSm2, ok := other.(PubKeySm2); ok {
-		return bytes.Equal(pubKey.Bytes(), otherSm2.Bytes())
+		return bytes.Equal(pubKey[:], otherSm2[:])
 	} else {
 		return false
 	}
