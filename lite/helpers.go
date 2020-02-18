@@ -2,8 +2,8 @@ package lite
 
 import (
 	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/tendermint/tendermint/crypto/sm2"
 
 	"github.com/tendermint/tendermint/types"
 	tmtime "github.com/tendermint/tendermint/types/time"
@@ -22,7 +22,7 @@ type privKeys []crypto.PrivKey
 func genPrivKeys(n int) privKeys {
 	res := make(privKeys, n)
 	for i := range res {
-		res[i] = ed25519.GenPrivKey()
+		res[i] = sm2.GenPrivKey()
 	}
 	return res
 }
@@ -31,7 +31,7 @@ func genPrivKeys(n int) privKeys {
 func (pkz privKeys) Change(i int) privKeys {
 	res := make(privKeys, len(pkz))
 	copy(res, pkz)
-	res[i] = ed25519.GenPrivKey()
+	res[i] = sm2.GenPrivKey()
 	return res
 }
 

@@ -7,7 +7,7 @@ import (
 	"github.com/tendermint/tendermint/crypto"
 )
 
-// The code in this file is adapted from agl/ed25519.
+// The code in this file is adapted from agl/sm2.
 // As such it is under the following license.
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style

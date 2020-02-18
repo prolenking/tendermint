@@ -9,7 +9,7 @@ import (
 
 	"github.com/tendermint/tendermint/crypto/tmhash"
 
-	"github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/tendermint/tendermint/crypto/sm2"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/state"
 
@@ -72,7 +72,7 @@ type TestHarnessConfig struct {
 	ConnDeadline   time.Duration
 	AcceptRetries  int
 
-	SecretConnKey ed25519.PrivKeyEd25519
+	SecretConnKey sm2.PrivKeySm2
 
 	ExitWhenComplete bool // Whether or not to call os.Exit when the harness has completed.
 }
