@@ -17,10 +17,10 @@ const lastSignBytes = "750802110500000000000000220B08B398F3E00510F48DA6402A480A2
 	"995DEFA51A28D215B10013211746573742D636861696E2D533245415533"
 
 const oldPrivvalContent = `{
-  "address": "1D8089FAFDFAE4A637F3D616E17B92905FA2D91D",
+  "address": "BCC8A20833DDD8CE0ACC39896F4A8F5F2D57E5E4",
   "pub_key": {
-    "type": "tendermint/PubKeyEd25519",
-    "value": "r3Yg2AhDZ745CNTpavsGU+mRZ8WpRXqoJuyqjN8mJq0="
+    "type": "tendermint/PubKeySm2",
+    "value": "AbEuVBss93OlgT4mZLuqhLnOo6hPE504WyTj0gW7pmnO"
   },
   "last_height": "5",
   "last_round": "0",
@@ -28,8 +28,8 @@ const oldPrivvalContent = `{
   "last_signature": "CTr7b9ZQlrJJf+12rPl5t/YSCUc/KqV7jQogCfFJA24e7hof69X6OMT7eFLVQHyodPjD/QTA298XHV5ejxInDQ==",
   "last_signbytes": "` + lastSignBytes + `",
   "priv_key": {
-    "type": "tendermint/PrivKeyEd25519",
-    "value": "7MwvTGEWWjsYwjn2IpRb+GYsWi9nnFsw8jPLLY1UtP6vdiDYCENnvjkI1Olq+wZT6ZFnxalFeqgm7KqM3yYmrQ=="
+    "type": "tendermint/PrivKeySm2",
+    "value": "LAGxJ8uiVC3CDVtjjEbjInGpHfkSX0uFalsZ27uX+58"
   }
 }`
 
