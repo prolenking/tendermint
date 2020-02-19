@@ -17,8 +17,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/tendermint/tendermint/crypto/sm2"
 	"github.com/tendermint/tendermint/libs/async"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
@@ -48,9 +48,9 @@ func makeKVStoreConnPair() (fooConn, barConn kvstoreConn) {
 func makeSecretConnPair(tb testing.TB) (fooSecConn, barSecConn *SecretConnection) {
 
 	var fooConn, barConn = makeKVStoreConnPair()
-	var fooPrvKey = ed25519.GenPrivKey()
+	var fooPrvKey = sm2.GenPrivKey()
 	var fooPubKey = fooPrvKey.PubKey()
-	var barPrvKey = ed25519.GenPrivKey()
+	var barPrvKey = sm2.GenPrivKey()
 	var barPubKey = barPrvKey.PubKey()
 
 	// Make connections from both sides in parallel.
@@ -182,7 +182,7 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 	genNodeRunner := func(id string, nodeConn kvstoreConn, nodeWrites []string, nodeReads *[]string) async.Task {
 		return func(_ int) (interface{}, bool, error) {
 			// Initiate cryptographic private key and secret connection trhough nodeConn.
-			nodePrvKey := ed25519.GenPrivKey()
+			nodePrvKey := sm2.GenPrivKey()
 			nodeSecretConn, err := MakeSecretConnection(nodeConn, nodePrvKey)
 			if err != nil {
 				t.Errorf("failed to establish SecretConnection for node: %v", err)
@@ -332,8 +332,8 @@ func (pk privKeyWithNilPubKey) Equals(pk2 crypto.PrivKey) bool  { return pk.orig
 
 func TestNilPubkey(t *testing.T) {
 	var fooConn, barConn = makeKVStoreConnPair()
-	var fooPrvKey = ed25519.GenPrivKey()
-	var barPrvKey = privKeyWithNilPubKey{ed25519.GenPrivKey()}
+	var fooPrvKey = sm2.GenPrivKey()
+	var barPrvKey = privKeyWithNilPubKey{sm2.GenPrivKey()}
 
 	go func() {
 		_, err := MakeSecretConnection(barConn, barPrvKey)
@@ -343,14 +343,14 @@ func TestNilPubkey(t *testing.T) {
 	assert.NotPanics(t, func() {
 		_, err := MakeSecretConnection(fooConn, fooPrvKey)
 		if assert.Error(t, err) {
-			assert.Equal(t, "expected ed25519 pubkey, got <nil>", err.Error())
+			assert.Equal(t, "expected sm2 pubkey, got <nil>", err.Error())
 		}
 	})
 }
 
-func TestNonEd25519Pubkey(t *testing.T) {
+func TestNonSm2Pubkey(t *testing.T) {
 	var fooConn, barConn = makeKVStoreConnPair()
-	var fooPrvKey = ed25519.GenPrivKey()
+	var fooPrvKey = sm2.GenPrivKey()
 	var barPrvKey = secp256k1.GenPrivKey()
 
 	go func() {
@@ -361,7 +361,7 @@ func TestNonEd25519Pubkey(t *testing.T) {
 	assert.NotPanics(t, func() {
 		_, err := MakeSecretConnection(fooConn, fooPrvKey)
 		if assert.Error(t, err) {
-			assert.Equal(t, "expected ed25519 pubkey, got secp256k1.PubKeySecp256k1", err.Error())
+			assert.Equal(t, "expected sm2 pubkey, got secp256k1.PubKeySecp256k1", err.Error())
 		}
 	})
 }
