@@ -2,6 +2,7 @@ package sm2
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"crypto/subtle"
 	"fmt"
 	"io"
@@ -75,7 +76,7 @@ func (privKey PrivKeySm2) Equals(other crypto.PrivKey) bool {
 	if otherSm2, ok := other.(PrivKeySm2); ok {
 		return subtle.ConstantTimeCompare(privKey[:], otherSm2[:]) == 1
 	}
-	
+
 	return false
 }
 
@@ -107,6 +108,21 @@ func genPrivKey(rand io.Reader) PrivKeySm2 {
 
 	var privKeySm2 PrivKeySm2
 	copy(privKeySm2[:], privKey.D.Bytes())
+
+	return privKeySm2
+}
+
+func GenPrivKeySm2FromSecret(secret []byte) PrivKeySm2 {
+	one := new(big.Int).SetInt64(1)
+	secHash := sha256.Sum256(secret)
+
+	k := new(big.Int).SetBytes(secHash[:])
+	n := new(big.Int).Sub(sm2.P256Sm2().Params().N, one)
+	k.Mod(k, n)
+	k.Add(k, one)
+
+	var privKeySm2 PrivKeySm2
+	copy(privKeySm2[:], k.Bytes())
 
 	return privKeySm2
 }

@@ -27,3 +27,12 @@ func TestSignAndValidateSm2(t *testing.T) {
 
 	assert.False(t, pubKey.VerifyBytes(msg, sig))
 }
+
+func TestGenPrivKeySm2FromSecret(t *testing.T) {
+	a := sm2.GenPrivKeySm2FromSecret([]byte("mySecret1"))
+	b := sm2.GenPrivKeySm2FromSecret([]byte("mySecret1"))
+	c := sm2.GenPrivKeySm2FromSecret([]byte("mySecret2"))
+
+	require.Equal(t, a, b)
+	require.NotEqual(t, a, c)
+}
