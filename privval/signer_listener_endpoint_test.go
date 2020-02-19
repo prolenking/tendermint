@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/tendermint/tendermint/crypto/sm2"
 	"github.com/tendermint/tendermint/libs/log"
 	tmnet "github.com/tendermint/tendermint/libs/net"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
@@ -62,7 +62,7 @@ func TestSignerRemoteRetryTCPOnly(t *testing.T) {
 
 	dialerEndpoint := NewSignerDialerEndpoint(
 		log.TestingLogger(),
-		DialTCPFn(ln.Addr().String(), testTimeoutReadWrite, ed25519.GenPrivKey()),
+		DialTCPFn(ln.Addr().String(), testTimeoutReadWrite, sm2.GenPrivKey()),
 	)
 	SignerDialerEndpointTimeoutReadWrite(time.Millisecond)(dialerEndpoint)
 	SignerDialerEndpointConnRetries(retries)(dialerEndpoint)
@@ -150,7 +150,7 @@ func newSignerListenerEndpoint(logger log.Logger, addr string, timeoutReadWrite 
 		UnixListenerTimeoutReadWrite(timeoutReadWrite)(unixLn)
 		listener = unixLn
 	} else {
-		tcpLn := NewTCPListener(ln, ed25519.GenPrivKey())
+		tcpLn := NewTCPListener(ln, sm2.GenPrivKey())
 		TCPListenerTimeoutAccept(testTimeoutAccept)(tcpLn)
 		TCPListenerTimeoutReadWrite(timeoutReadWrite)(tcpLn)
 		listener = tcpLn

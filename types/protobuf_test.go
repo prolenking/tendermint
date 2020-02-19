@@ -12,12 +12,15 @@ import (
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/tendermint/tendermint/crypto/sm2"
 	"github.com/tendermint/tendermint/version"
 )
 
 func TestABCIPubKey(t *testing.T) {
+	pkSm2 := sm2.GenPrivKey().PubKey()
 	pkEd := ed25519.GenPrivKey().PubKey()
 	pkSecp := secp256k1.GenPrivKey().PubKey()
+	testABCIPubKey(t, pkSm2, ABCIPubKeyTypeSm2)
 	testABCIPubKey(t, pkEd, ABCIPubKeyTypeEd25519)
 	testABCIPubKey(t, pkSecp, ABCIPubKeyTypeSecp256k1)
 }
@@ -30,7 +33,7 @@ func testABCIPubKey(t *testing.T, pk crypto.PubKey, typeStr string) {
 }
 
 func TestABCIValidators(t *testing.T) {
-	pkEd := ed25519.GenPrivKey().PubKey()
+	pkEd := sm2.GenPrivKey().PubKey()
 
 	// correct validator
 	tmValExpected := NewValidator(pkEd, 10)
@@ -154,7 +157,7 @@ func (pubKeyEddie) VerifyBytes(msg []byte, sig []byte) bool { return false }
 func (pubKeyEddie) Equals(crypto.PubKey) bool               { return false }
 
 func TestABCIValidatorFromPubKeyAndPower(t *testing.T) {
-	pubkey := ed25519.GenPrivKey().PubKey()
+	pubkey := sm2.GenPrivKey().PubKey()
 
 	abciVal := TM2PB.NewValidatorUpdate(pubkey, 10)
 	assert.Equal(t, int64(10), abciVal.Power)
@@ -164,7 +167,7 @@ func TestABCIValidatorFromPubKeyAndPower(t *testing.T) {
 }
 
 func TestABCIValidatorWithoutPubKey(t *testing.T) {
-	pkEd := ed25519.GenPrivKey().PubKey()
+	pkEd := sm2.GenPrivKey().PubKey()
 
 	abciVal := TM2PB.Validator(NewValidator(pkEd, 10))
 

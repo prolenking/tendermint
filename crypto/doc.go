@@ -22,7 +22,7 @@
 //     pubKey := key.PubKey()
 
 // For example:
-//     privKey, err := ed25519.GenPrivKey()
+//     privKey, err := sm2.GenPrivKey()
 //     if err != nil {
 // 	...
 //     }

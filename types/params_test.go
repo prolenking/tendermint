@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	valEd25519   = []string{ABCIPubKeyTypeEd25519}
+	valSm2       = []string{ABCIPubKeyTypeSm2}
 	valSecp256k1 = []string{ABCIPubKeyTypeSecp256k1}
 )
 
@@ -21,18 +21,18 @@ func TestConsensusParamsValidation(t *testing.T) {
 		valid  bool
 	}{
 		// test block params
-		0: {makeParams(1, 0, 10, 1, valEd25519), true},
-		1: {makeParams(0, 0, 10, 1, valEd25519), false},
-		2: {makeParams(47*1024*1024, 0, 10, 1, valEd25519), true},
-		3: {makeParams(10, 0, 10, 1, valEd25519), true},
-		4: {makeParams(100*1024*1024, 0, 10, 1, valEd25519), true},
-		5: {makeParams(101*1024*1024, 0, 10, 1, valEd25519), false},
-		6: {makeParams(1024*1024*1024, 0, 10, 1, valEd25519), false},
-		7: {makeParams(1024*1024*1024, 0, 10, -1, valEd25519), false},
-		8: {makeParams(1, 0, -10, 1, valEd25519), false},
+		0: {makeParams(1, 0, 10, 1, valSm2), true},
+		1: {makeParams(0, 0, 10, 1, valSm2), false},
+		2: {makeParams(47*1024*1024, 0, 10, 1, valSm2), true},
+		3: {makeParams(10, 0, 10, 1, valSm2), true},
+		4: {makeParams(100*1024*1024, 0, 10, 1, valSm2), true},
+		5: {makeParams(101*1024*1024, 0, 10, 1, valSm2), false},
+		6: {makeParams(1024*1024*1024, 0, 10, 1, valSm2), false},
+		7: {makeParams(1024*1024*1024, 0, 10, -1, valSm2), false},
+		8: {makeParams(1, 0, -10, 1, valSm2), false},
 		// test evidence params
-		9:  {makeParams(1, 0, 10, 0, valEd25519), false},
-		10: {makeParams(1, 0, 10, -1, valEd25519), false},
+		9:  {makeParams(1, 0, 10, 0, valSm2), false},
+		10: {makeParams(1, 0, 10, -1, valSm2), false},
 		// test no pubkey type provided
 		11: {makeParams(1, 0, 10, 1, []string{}), false},
 		// test invalid pubkey type provided
@@ -71,14 +71,14 @@ func makeParams(
 
 func TestConsensusParamsHash(t *testing.T) {
 	params := []ConsensusParams{
-		makeParams(4, 2, 10, 3, valEd25519),
-		makeParams(1, 4, 10, 3, valEd25519),
-		makeParams(1, 2, 10, 4, valEd25519),
-		makeParams(2, 5, 10, 7, valEd25519),
-		makeParams(1, 7, 10, 6, valEd25519),
-		makeParams(9, 5, 10, 4, valEd25519),
-		makeParams(7, 8, 10, 9, valEd25519),
-		makeParams(4, 6, 10, 5, valEd25519),
+		makeParams(4, 2, 10, 3, valSm2),
+		makeParams(1, 4, 10, 3, valSm2),
+		makeParams(1, 2, 10, 4, valSm2),
+		makeParams(2, 5, 10, 7, valSm2),
+		makeParams(1, 7, 10, 6, valSm2),
+		makeParams(9, 5, 10, 4, valSm2),
+		makeParams(7, 8, 10, 9, valSm2),
+		makeParams(4, 6, 10, 5, valSm2),
 	}
 
 	hashes := make([][]byte, len(params))
@@ -104,13 +104,13 @@ func TestConsensusParamsUpdate(t *testing.T) {
 	}{
 		// empty updates
 		{
-			makeParams(1, 2, 10, 3, valEd25519),
+			makeParams(1, 2, 10, 3, valSm2),
 			&abci.ConsensusParams{},
-			makeParams(1, 2, 10, 3, valEd25519),
+			makeParams(1, 2, 10, 3, valSm2),
 		},
 		// fine updates
 		{
-			makeParams(1, 2, 10, 3, valEd25519),
+			makeParams(1, 2, 10, 3, valSm2),
 			&abci.ConsensusParams{
 				Block: &abci.BlockParams{
 					MaxBytes: 100,
