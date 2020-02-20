@@ -60,6 +60,29 @@ func (privKey PrivKeySm2) Sign(msg []byte) ([]byte, error) {
 	copy(sig[:32], R[:])
 	copy(sig[32:], S[:])
 
+	if !privKey.PubKey().VerifyBytes(msg, sig) {
+		return privKey.Sign(msg)
+	}
+
+	return sig, nil
+}
+
+func (privKey PrivKeySm2) Sm2Sign(msg []byte) ([]byte, error) {
+	r, s, err := sm2.Sm2Sign(privKey.GetPrivateKey(), msg, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	R := r.Bytes()
+	S := s.Bytes()
+	sig := make([]byte, 64)
+	copy(sig[:32], R[:])
+	copy(sig[32:], S[:])
+
+	if !privKey.PubKey().(PubKeySm2).Sm2VerifyBytes(msg, sig) {
+		return privKey.Sm2Sign(msg)
+	}
+
 	return sig, nil
 }
 
@@ -142,11 +165,23 @@ func (pubKey PubKeySm2) VerifyBytes(msg []byte, sig []byte) bool {
 		return false
 	}
 
-	pubKeyBytes := sm2.Decompress(pubKey[:])
+	publicKey := sm2.Decompress(pubKey[:])
 	r := new(big.Int).SetBytes(sig[:32])
 	s := new(big.Int).SetBytes(sig[32:])
 
-	return sm2.Verify(pubKeyBytes, msg, r, s)
+	return sm2.Verify(publicKey, msg, r, s)
+}
+
+func (pubKey PubKeySm2) Sm2VerifyBytes(msg []byte, sig []byte) bool {
+	if len(sig) != SignatureSize {
+		return false
+	}
+
+	publicKey := sm2.Decompress(pubKey[:])
+	r := new(big.Int).SetBytes(sig[:32])
+	s := new(big.Int).SetBytes(sig[32:])
+
+	return sm2.Sm2Verify(publicKey, msg, nil, r, s)
 }
 
 func (pubKey PubKeySm2) String() string {

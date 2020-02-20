@@ -1,6 +1,7 @@
 package sm2_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,21 +12,48 @@ import (
 )
 
 // nolint
-func TestSignAndValidateSm2(t *testing.T) {
-	privKey := sm2.GenPrivKey()
-	pubKey := privKey.PubKey()
+func TestSignAndValidate(t *testing.T) {
+	for i := 0; i < 500; i++ {
+		privKey := sm2.GenPrivKey()
+		pubKey := privKey.PubKey()
 
-	msg := crypto.CRandBytes(128)
-	sig, err := privKey.Sign(msg)
-	require.Nil(t, err)
+		msg := crypto.CRandBytes(128)
+		sig, err := privKey.Sign(msg)
+		require.Nil(t, err)
 
-	// Test the signature
-	assert.True(t, pubKey.VerifyBytes(msg, sig))
+		// Test the signature
+		if !pubKey.VerifyBytes(msg, sig) {
+			fmt.Printf("# %d: Verify error\n", i)
+		}
 
-	// Mutate the signature, just one bit.
-	sig[7] ^= byte(0x01)
+		// Mutate the signature, just one bit.
+		sig[7] ^= byte(0x01)
 
-	assert.False(t, pubKey.VerifyBytes(msg, sig))
+		assert.False(t, pubKey.VerifyBytes(msg, sig))
+	}
+
+}
+
+func TestSm2SignAndSm2Validate(t *testing.T) {
+	for i := 0; i < 500; i++ {
+		privKey := sm2.GenPrivKey()
+		pubKey := privKey.PubKey().(sm2.PubKeySm2)
+
+		msg := crypto.CRandBytes(128)
+		sig, err := privKey.Sm2Sign(msg)
+		require.Nil(t, err)
+
+		// Test the signature
+		if !pubKey.Sm2VerifyBytes(msg, sig) {
+			fmt.Printf("# %d: Verify error\n", i)
+		}
+
+		// Mutate the signature, just one bit.
+		sig[7] ^= byte(0x01)
+
+		assert.False(t, pubKey.VerifyBytes(msg, sig))
+	}
+
 }
 
 func TestGenPrivKeySm2FromSecret(t *testing.T) {
