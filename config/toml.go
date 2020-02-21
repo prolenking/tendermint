@@ -452,7 +452,7 @@ var testGenesisFmt = `{
     {
       "pub_key": {
         "type": "tendermint/PubKeySm2",
-        "value":"ALvInmwdEH3Z6i6R5mSVIomm18NtqPnlejcqESofdwoa"
+        "value":"AV0eSinoYv2baEJiuJJ0oJ33Eha0kISwsoqgWQC+iBpm"
       },
       "power": "10",
       "name": ""
@@ -462,14 +462,14 @@ var testGenesisFmt = `{
 }`
 
 var testPrivValidatorKey = `{
-  "address": "6CD672D627ABCCAB4C0B197D5E7E2E4724B50222",
+  "address": "0591BD05426263A248A464C1CDA891AF4013A577",
   "pub_key": {
     "type": "tendermint/PubKeySm2",
-    "value": "ALvInmwdEH3Z6i6R5mSVIomm18NtqPnlejcqESofdwoa"
+    "value": "AV0eSinoYv2baEJiuJJ0oJ33Eha0kISwsoqgWQC+iBpm"
   },
   "priv_key": {
     "type": "tendermint/PrivKeySm2",
-    "value": "6lfl/xyGCe4dooyqqVVnqS38d5yAGrQUou4FDwB+Kco"
+    "value": "9yeVNqq98dXbiy33hp8ZUGTwRl8ubp3HMqyeybUUxs0="
   }
 }`
 

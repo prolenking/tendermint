@@ -19,14 +19,14 @@ import (
 
 const (
 	keyFileContents = `{
-	"address": "D08FCA3BA74CF17CBFC15E64F9505302BB0E2748",
+	"address": "0591BD05426263A248A464C1CDA891AF4013A577",
 	"pub_key": {
 		"type": "tendermint/PubKeySm2",
-		"value": "ZCsuTjaczEyon70nmKxwvwu+jqrbq5OH3yQjcK0SFxc="
+		"value": "AV0eSinoYv2baEJiuJJ0oJ33Eha0kISwsoqgWQC+iBpm"
 	},
 	"priv_key": {
 		"type": "tendermint/PrivKeySm2",
-		"value": "8O39AkQsoe1sBQwud/Kdul8lg8K9SFsql9aZvwXQSt1kKy5ONpzMTKifvSeYrHC/C76Oqturk4ffJCNwrRIXFw=="
+		"value": "9yeVNqq98dXbiy33hp8ZUGTwRl8ubp3HMqyeybUUxs0="
 	}
 }`
 
@@ -57,10 +57,10 @@ const (
 	},
 	"validators": [
 		{
-		"address": "D08FCA3BA74CF17CBFC15E64F9505302BB0E2748",
+		"address": "0591BD05426263A248A464C1CDA891AF4013A577",
 		"pub_key": {
 			"type": "tendermint/PubKeySm2",
-			"value": "ZCsuTjaczEyon70nmKxwvwu+jqrbq5OH3yQjcK0SFxc="
+			"value": "AV0eSinoYv2baEJiuJJ0oJ33Eha0kISwsoqgWQC+iBpm"
 		},
 		"power": "10",
 		"name": ""
