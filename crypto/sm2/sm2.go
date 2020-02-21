@@ -87,6 +87,15 @@ func (privKey PrivKeySm2) PubKey() crypto.PubKey {
 	return pubKey
 }
 
+func (privKey PrivKeySm2) PubKeySm2() PubKeySm2 {
+	priv := privKey.GetPrivateKey()
+	compPubkey := sm2.Compress(&priv.PublicKey)
+	var pubKey PubKeySm2
+	copy(pubKey[:], compPubkey)
+
+	return pubKey
+}
+
 func (privKey PrivKeySm2) Equals(other crypto.PrivKey) bool {
 	if otherSm2, ok := other.(PrivKeySm2); ok {
 		return subtle.ConstantTimeCompare(privKey[:], otherSm2[:]) == 1
