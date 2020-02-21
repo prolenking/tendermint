@@ -98,7 +98,10 @@ func TestSignerProposal(t *testing.T) {
 		require.NoError(t, tc.mockPV.SignProposal(tc.chainID, want))
 		require.NoError(t, tc.signerClient.SignProposal(tc.chainID, have))
 
-		assert.Equal(t, want.Signature, have.Signature)
+		pubKey := tc.mockPV.GetPubKey()
+
+		require.True(t, pubKey.VerifyBytes(want.SignBytes(tc.chainID), want.Signature))
+		require.True(t, pubKey.VerifyBytes(have.SignBytes(tc.chainID), have.Signature))
 	}
 }
 
@@ -114,7 +117,10 @@ func TestSignerVote(t *testing.T) {
 		require.NoError(t, tc.mockPV.SignVote(tc.chainID, want))
 		require.NoError(t, tc.signerClient.SignVote(tc.chainID, have))
 
-		assert.Equal(t, want.Signature, have.Signature)
+		pubKey := tc.mockPV.GetPubKey()
+
+		require.True(t, pubKey.VerifyBytes(want.SignBytes(tc.chainID), want.Signature))
+		require.True(t, pubKey.VerifyBytes(have.SignBytes(tc.chainID), have.Signature))
 	}
 }
 
@@ -131,7 +137,11 @@ func TestSignerVoteResetDeadline(t *testing.T) {
 
 		require.NoError(t, tc.mockPV.SignVote(tc.chainID, want))
 		require.NoError(t, tc.signerClient.SignVote(tc.chainID, have))
-		assert.Equal(t, want.Signature, have.Signature)
+
+		pubKey := tc.mockPV.GetPubKey()
+
+		require.True(t, pubKey.VerifyBytes(want.SignBytes(tc.chainID), want.Signature))
+		require.True(t, pubKey.VerifyBytes(have.SignBytes(tc.chainID), have.Signature))
 
 		// TODO(jleni): Clarify what is actually being tested
 
@@ -140,7 +150,9 @@ func TestSignerVoteResetDeadline(t *testing.T) {
 
 		require.NoError(t, tc.mockPV.SignVote(tc.chainID, want))
 		require.NoError(t, tc.signerClient.SignVote(tc.chainID, have))
-		assert.Equal(t, want.Signature, have.Signature)
+
+		require.True(t, pubKey.VerifyBytes(want.SignBytes(tc.chainID), want.Signature))
+		require.True(t, pubKey.VerifyBytes(have.SignBytes(tc.chainID), have.Signature))
 	}
 }
 
@@ -165,7 +177,10 @@ func TestSignerVoteKeepAlive(t *testing.T) {
 		require.NoError(t, tc.mockPV.SignVote(tc.chainID, want))
 		require.NoError(t, tc.signerClient.SignVote(tc.chainID, have))
 
-		assert.Equal(t, want.Signature, have.Signature)
+		pubKey := tc.mockPV.GetPubKey()
+
+		require.True(t, pubKey.VerifyBytes(want.SignBytes(tc.chainID), want.Signature))
+		require.True(t, pubKey.VerifyBytes(have.SignBytes(tc.chainID), have.Signature))
 	}
 }
 
