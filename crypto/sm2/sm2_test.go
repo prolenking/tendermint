@@ -13,7 +13,7 @@ import (
 
 // nolint
 func TestSignAndValidate(t *testing.T) {
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 1000; i++ {
 		privKey := sm2.GenPrivKey()
 		pubKey := privKey.PubKey()
 
@@ -35,7 +35,7 @@ func TestSignAndValidate(t *testing.T) {
 }
 
 func TestSm2SignAndSm2Validate(t *testing.T) {
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 1000; i++ {
 		privKey := sm2.GenPrivKey()
 		pubKey := privKey.PubKey().(sm2.PubKeySm2)
 

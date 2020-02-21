@@ -57,12 +57,8 @@ func (privKey PrivKeySm2) Sign(msg []byte) ([]byte, error) {
 	R := r.Bytes()
 	S := s.Bytes()
 	sig := make([]byte, 64)
-	copy(sig[:32], R[:])
-	copy(sig[32:], S[:])
-
-	if !privKey.PubKey().VerifyBytes(msg, sig) {
-		return privKey.Sign(msg)
-	}
+	copy(sig[32-len(R):32], R[:])
+	copy(sig[64-len(S):64], S[:])
 
 	return sig, nil
 }
@@ -76,12 +72,8 @@ func (privKey PrivKeySm2) Sm2Sign(msg []byte) ([]byte, error) {
 	R := r.Bytes()
 	S := s.Bytes()
 	sig := make([]byte, 64)
-	copy(sig[:32], R[:])
-	copy(sig[32:], S[:])
-
-	if !privKey.PubKey().(PubKeySm2).Sm2VerifyBytes(msg, sig) {
-		return privKey.Sm2Sign(msg)
-	}
+	copy(sig[32-len(R):32], R[:])
+	copy(sig[64-len(S):64], S[:])
 
 	return sig, nil
 }
