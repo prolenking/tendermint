@@ -144,3 +144,35 @@ func GetSignatureSize() int {
 		return ed25519.SignatureSize
 	}
 }
+
+func VerifyPubKeyType(pubKey crypto.PubKey) bool {
+	switch Algo {
+	case ED25519:
+		if _, ok := pubKey.(ed25519.PubKeyEd25519); ok {
+			return true
+		}
+
+	case SM2:
+		if _, ok := pubKey.(sm2.PubKeySm2); ok {
+			return true
+		}
+	}
+
+	return false
+}
+
+func VerifyPrivKeyType(privKey crypto.PrivKey) bool {
+	switch Algo {
+	case ED25519:
+		if _, ok := privKey.(ed25519.PrivKeyEd25519); ok {
+			return true
+		}
+
+	case SM2:
+		if _, ok := privKey.(sm2.PrivKeySm2); ok {
+			return true
+		}
+	}
+
+	return false
+}
