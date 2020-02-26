@@ -9,6 +9,7 @@ import (
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/tendermint/tendermint/crypto/sm2"
 	"github.com/tendermint/tendermint/crypto/sr25519"
 )
 
@@ -166,13 +167,15 @@ func generatePubKeysAndSignatures(n int, msg []byte) (pubkeys []crypto.PubKey, s
 	signatures = make([][]byte, n)
 	for i := 0; i < n; i++ {
 		var privkey crypto.PrivKey
-		switch rand.Int63() % 3 {
+		switch rand.Int63() % 4 {
 		case 0:
 			privkey = ed25519.GenPrivKey()
 		case 1:
 			privkey = secp256k1.GenPrivKey()
 		case 2:
 			privkey = sr25519.GenPrivKey()
+		case 3:
+			privkey = sm2.GenPrivKey()
 		}
 		pubkeys[i] = privkey.PubKey()
 		signatures[i], _ = privkey.Sign(msg)
