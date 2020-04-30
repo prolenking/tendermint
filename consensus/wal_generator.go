@@ -11,6 +11,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	db "github.com/tendermint/tm-db"
+
 	"github.com/tendermint/tendermint/abci/example/kvstore"
 	cfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/log"
@@ -21,7 +23,6 @@ import (
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/store"
 	"github.com/tendermint/tendermint/types"
-	db "github.com/tendermint/tm-db"
 )
 
 // WALGenerateNBlocks generates a consensus WAL. It does this by spinning up a
@@ -125,9 +126,9 @@ func randPort() int {
 
 func makeAddrs() (string, string, string) {
 	start := randPort()
-	return fmt.Sprintf("tcp://0.0.0.0:%d", start),
-		fmt.Sprintf("tcp://0.0.0.0:%d", start+1),
-		fmt.Sprintf("tcp://0.0.0.0:%d", start+2)
+	return fmt.Sprintf("tcp://127.0.0.1:%d", start),
+		fmt.Sprintf("tcp://127.0.0.1:%d", start+1),
+		fmt.Sprintf("tcp://127.0.0.1:%d", start+2)
 }
 
 // getConfig returns a config for test cases

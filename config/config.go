@@ -415,8 +415,8 @@ func DefaultRPCConfig() *RPCConfig {
 // TestRPCConfig returns a configuration for testing the RPC server
 func TestRPCConfig() *RPCConfig {
 	cfg := DefaultRPCConfig()
-	cfg.ListenAddress = "tcp://0.0.0.0:36657"
-	cfg.GRPCListenAddress = "tcp://0.0.0.0:36658"
+	cfg.ListenAddress = "tcp://127.0.0.1:36657"
+	cfg.GRPCListenAddress = "tcp://127.0.0.1:36658"
 	cfg.Unsafe = true
 	return cfg
 }
@@ -584,7 +584,7 @@ func DefaultP2PConfig() *P2PConfig {
 // TestP2PConfig returns a configuration for testing the peer-to-peer layer
 func TestP2PConfig() *P2PConfig {
 	cfg := DefaultP2PConfig()
-	cfg.ListenAddress = "tcp://0.0.0.0:36656"
+	cfg.ListenAddress = "tcp://127.0.0.1:36656"
 	cfg.FlushThrottleTimeout = 10 * time.Millisecond
 	cfg.AllowDuplicateIP = true
 	return cfg
@@ -733,6 +733,8 @@ func (cfg *FastSyncConfig) ValidateBasic() error {
 	case "v0":
 		return nil
 	case "v1":
+		return nil
+	case "v2":
 		return nil
 	default:
 		return fmt.Errorf("unknown fastsync version %s", cfg.Version)
