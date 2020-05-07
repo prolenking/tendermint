@@ -30,6 +30,7 @@ const (
 )
 
 // TODO: Make non-global by allowing for registration of more pubkey types
+
 var ABCIPubKeyTypesToAminoNames = map[string]string{
 	ABCIPubKeyTypeSm2:       sm2.PubKeyAminoName,
 	ABCIPubKeyTypeEd25519:   ed25519.PubKeyAminoName,

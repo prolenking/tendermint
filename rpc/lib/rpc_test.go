@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	amino "github.com/tendermint/go-amino"
+
 	tmbytes "github.com/tendermint/tendermint/libs/bytes"
 	"github.com/tendermint/tendermint/libs/log"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
@@ -28,7 +29,7 @@ import (
 
 // Client and Server should work over tcp or unix sockets
 const (
-	tcpAddr = "tcp://0.0.0.0:47768"
+	tcpAddr = "tcp://127.0.0.1:47768"
 
 	unixSocket = "/tmp/rpc_test.sock"
 	unixAddr   = "unix://" + unixSocket
