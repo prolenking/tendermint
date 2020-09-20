@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"net"
 	"os"
 	"testing"
 	"time"
@@ -34,7 +35,8 @@ func TestAddrBookPickAddress(t *testing.T) {
 
 	randAddrs := randNetAddressPairs(t, 1)
 	addrSrc := randAddrs[0]
-	book.AddAddress(addrSrc.addr, addrSrc.src)
+	err := book.AddAddress(addrSrc.addr, addrSrc.src)
+	require.NoError(t, err)
 
 	// pick an address when we only have new address
 	addr = book.PickAddress(0)
@@ -67,7 +69,8 @@ func TestAddrBookSaveLoad(t *testing.T) {
 
 	book = NewAddrBook(fname, true)
 	book.SetLogger(log.TestingLogger())
-	book.Start()
+	err := book.Start()
+	require.NoError(t, err)
 
 	assert.True(t, book.Empty())
 
@@ -75,7 +78,8 @@ func TestAddrBookSaveLoad(t *testing.T) {
 	randAddrs := randNetAddressPairs(t, 100)
 
 	for _, addrSrc := range randAddrs {
-		book.AddAddress(addrSrc.addr, addrSrc.src)
+		err := book.AddAddress(addrSrc.addr, addrSrc.src)
+		require.NoError(t, err)
 	}
 
 	assert.Equal(t, 100, book.Size())
@@ -83,7 +87,8 @@ func TestAddrBookSaveLoad(t *testing.T) {
 
 	book = NewAddrBook(fname, true)
 	book.SetLogger(log.TestingLogger())
-	book.Start()
+	err = book.Start()
+	require.NoError(t, err)
 
 	assert.Equal(t, 100, book.Size())
 }
@@ -99,7 +104,8 @@ func TestAddrBookLookup(t *testing.T) {
 	for _, addrSrc := range randAddrs {
 		addr := addrSrc.addr
 		src := addrSrc.src
-		book.AddAddress(addr, src)
+		err := book.AddAddress(addr, src)
+		require.NoError(t, err)
 
 		ka := book.HasAddress(addr)
 		assert.True(t, ka, "Expected to find KnownAddress %v but wasn't there.", addr)
@@ -115,7 +121,8 @@ func TestAddrBookPromoteToOld(t *testing.T) {
 	book := NewAddrBook(fname, true)
 	book.SetLogger(log.TestingLogger())
 	for _, addrSrc := range randAddrs {
-		book.AddAddress(addrSrc.addr, addrSrc.src)
+		err := book.AddAddress(addrSrc.addr, addrSrc.src)
+		require.NoError(t, err)
 	}
 
 	// Attempt all addresses.
@@ -160,9 +167,12 @@ func TestAddrBookHandlesDuplicates(t *testing.T) {
 
 	differentSrc := randIPv4Address(t)
 	for _, addrSrc := range randAddrs {
-		book.AddAddress(addrSrc.addr, addrSrc.src)
-		book.AddAddress(addrSrc.addr, addrSrc.src)  // duplicate
-		book.AddAddress(addrSrc.addr, differentSrc) // different src
+		err := book.AddAddress(addrSrc.addr, addrSrc.src)
+		require.NoError(t, err)
+		err = book.AddAddress(addrSrc.addr, addrSrc.src) // duplicate
+		require.NoError(t, err)
+		err = book.AddAddress(addrSrc.addr, differentSrc) // different src
+		require.NoError(t, err)
 	}
 
 	assert.Equal(t, 100, book.Size())
@@ -208,7 +218,8 @@ func TestAddrBookRemoveAddress(t *testing.T) {
 	book.SetLogger(log.TestingLogger())
 
 	addr := randIPv4Address(t)
-	book.AddAddress(addr, addr)
+	err := book.AddAddress(addr, addr)
+	require.NoError(t, err)
 	assert.Equal(t, 1, book.Size())
 
 	book.RemoveAddress(addr)
@@ -259,7 +270,8 @@ func TestAddrBookGetSelection(t *testing.T) {
 
 	// 2) add one address
 	addr := randIPv4Address(t)
-	book.AddAddress(addr, addr)
+	err := book.AddAddress(addr, addr)
+	require.NoError(t, err)
 
 	assert.Equal(t, 1, len(book.GetSelection()))
 	assert.Equal(t, addr, book.GetSelection()[0])
@@ -267,7 +279,8 @@ func TestAddrBookGetSelection(t *testing.T) {
 	// 3) add a bunch of addresses
 	randAddrs := randNetAddressPairs(t, 100)
 	for _, addrSrc := range randAddrs {
-		book.AddAddress(addrSrc.addr, addrSrc.src)
+		err := book.AddAddress(addrSrc.addr, addrSrc.src)
+		require.NoError(t, err)
 	}
 
 	// check there is no duplicates
@@ -300,7 +313,8 @@ func TestAddrBookGetSelectionWithBias(t *testing.T) {
 
 	// 2) add one address
 	addr := randIPv4Address(t)
-	book.AddAddress(addr, addr)
+	err := book.AddAddress(addr, addr)
+	require.NoError(t, err)
 
 	selection = book.GetSelectionWithBias(biasTowardsNewAddrs)
 	assert.Equal(t, 1, len(selection))
@@ -309,7 +323,8 @@ func TestAddrBookGetSelectionWithBias(t *testing.T) {
 	// 3) add a bunch of addresses
 	randAddrs := randNetAddressPairs(t, 100)
 	for _, addrSrc := range randAddrs {
-		book.AddAddress(addrSrc.addr, addrSrc.src)
+		err := book.AddAddress(addrSrc.addr, addrSrc.src)
+		require.NoError(t, err)
 	}
 
 	// check there is no duplicates
@@ -375,7 +390,8 @@ func TestAddrBookHasAddress(t *testing.T) {
 	book := NewAddrBook(fname, true)
 	book.SetLogger(log.TestingLogger())
 	addr := randIPv4Address(t)
-	book.AddAddress(addr, addr)
+	err := book.AddAddress(addr, addr)
+	require.NoError(t, err)
 
 	assert.True(t, book.HasAddress(addr))
 
@@ -441,7 +457,8 @@ func TestAddrBookEmpty(t *testing.T) {
 	require.True(t, book.Empty())
 
 	// Check that book with address is not empty
-	book.AddAddress(randIPv4Address(t), randIPv4Address(t))
+	err := book.AddAddress(randIPv4Address(t), randIPv4Address(t))
+	require.NoError(t, err)
 	require.False(t, book.Empty())
 }
 
@@ -572,6 +589,128 @@ func TestMultipleAddrBookAddressSelection(t *testing.T) {
 	}
 }
 
+func TestAddrBookAddDoesNotOverwriteOldIP(t *testing.T) {
+	fname := createTempFileName("addrbook_test")
+	defer deleteTempFile(fname)
+
+	// This test creates adds a peer to the address book and marks it good
+	// It then attempts to override the peer's IP, by adding a peer with the same ID
+	// but different IP. We distinguish the IP's by "RealIP" and "OverrideAttemptIP"
+	peerID := "678503e6c8f50db7279c7da3cb9b072aac4bc0d5"
+	peerRealIP := "1.1.1.1:26656"
+	peerOverrideAttemptIP := "2.2.2.2:26656"
+	SrcAddr := "b0dd378c3fbc4c156cd6d302a799f0d2e4227201@159.89.121.174:26656"
+
+	// There is a chance that AddAddress will ignore the new peer its given.
+	// So we repeat trying to override the peer several times,
+	// to ensure we aren't in a case that got probabilistically ignored
+	numOverrideAttempts := 10
+
+	peerRealAddr, err := p2p.NewNetAddressString(peerID + "@" + peerRealIP)
+	require.Nil(t, err)
+
+	peerOverrideAttemptAddr, err := p2p.NewNetAddressString(peerID + "@" + peerOverrideAttemptIP)
+	require.Nil(t, err)
+
+	src, err := p2p.NewNetAddressString(SrcAddr)
+	require.Nil(t, err)
+
+	book := NewAddrBook(fname, true)
+	book.SetLogger(log.TestingLogger())
+	err = book.AddAddress(peerRealAddr, src)
+	require.Nil(t, err)
+	book.MarkAttempt(peerRealAddr)
+	book.MarkGood(peerRealAddr.ID)
+
+	// Double check that adding a peer again doesn't error
+	err = book.AddAddress(peerRealAddr, src)
+	require.Nil(t, err)
+
+	// Try changing ip but keeping the same node id. (change 1.1.1.1 to 2.2.2.2)
+	// This should just be ignored, and not error.
+	for i := 0; i < numOverrideAttempts; i++ {
+		err = book.AddAddress(peerOverrideAttemptAddr, src)
+		require.Nil(t, err)
+	}
+	// Now check that the IP was not overridden.
+	// This is done by sampling several peers from addr book
+	// and ensuring they all have the correct IP.
+	// In the expected functionality, this test should only have 1 Peer, hence will pass.
+	for i := 0; i < numOverrideAttempts; i++ {
+		selection := book.GetSelection()
+		for _, addr := range selection {
+			require.Equal(t, addr.IP, peerRealAddr.IP)
+		}
+	}
+}
+
+func TestAddrBookGroupKey(t *testing.T) {
+	// non-strict routability
+	testCases := []struct {
+		name   string
+		ip     string
+		expKey string
+	}{
+		// IPv4 normal.
+		{"ipv4 normal class a", "12.1.2.3", "12.1.0.0"},
+		{"ipv4 normal class b", "173.1.2.3", "173.1.0.0"},
+		{"ipv4 normal class c", "196.1.2.3", "196.1.0.0"},
+
+		// IPv6/IPv4 translations.
+		{"ipv6 rfc3964 with ipv4 encap", "2002:0c01:0203::", "12.1.0.0"},
+		{"ipv6 rfc4380 toredo ipv4", "2001:0:1234::f3fe:fdfc", "12.1.0.0"},
+		{"ipv6 rfc6052 well-known prefix with ipv4", "64:ff9b::0c01:0203", "12.1.0.0"},
+		{"ipv6 rfc6145 translated ipv4", "::ffff:0:0c01:0203", "12.1.0.0"},
+
+		// Tor.
+		{"ipv6 tor onioncat", "fd87:d87e:eb43:1234::5678", "tor:2"},
+		{"ipv6 tor onioncat 2", "fd87:d87e:eb43:1245::6789", "tor:2"},
+		{"ipv6 tor onioncat 3", "fd87:d87e:eb43:1345::6789", "tor:3"},
+
+		// IPv6 normal.
+		{"ipv6 normal", "2602:100::1", "2602:100::"},
+		{"ipv6 normal 2", "2602:0100::1234", "2602:100::"},
+		{"ipv6 hurricane electric", "2001:470:1f10:a1::2", "2001:470:1000::"},
+		{"ipv6 hurricane electric 2", "2001:0470:1f10:a1::2", "2001:470:1000::"},
+	}
+
+	for i, tc := range testCases {
+		nip := net.ParseIP(tc.ip)
+		key := groupKeyFor(p2p.NewNetAddressIPPort(nip, 26656), false)
+		assert.Equal(t, tc.expKey, key, "#%d", i)
+	}
+
+	// strict routability
+	testCases = []struct {
+		name   string
+		ip     string
+		expKey string
+	}{
+		// Local addresses.
+		{"ipv4 localhost", "127.0.0.1", "local"},
+		{"ipv6 localhost", "::1", "local"},
+		{"ipv4 zero", "0.0.0.0", "local"},
+		{"ipv4 first octet zero", "0.1.2.3", "local"},
+
+		// Unroutable addresses.
+		{"ipv4 invalid bcast", "255.255.255.255", "unroutable"},
+		{"ipv4 rfc1918 10/8", "10.1.2.3", "unroutable"},
+		{"ipv4 rfc1918 172.16/12", "172.16.1.2", "unroutable"},
+		{"ipv4 rfc1918 192.168/16", "192.168.1.2", "unroutable"},
+		{"ipv6 rfc3849 2001:db8::/32", "2001:db8::1234", "unroutable"},
+		{"ipv4 rfc3927 169.254/16", "169.254.1.2", "unroutable"},
+		{"ipv6 rfc4193 fc00::/7", "fc00::1234", "unroutable"},
+		{"ipv6 rfc4843 2001:10::/28", "2001:10::1234", "unroutable"},
+		{"ipv6 rfc4862 fe80::/64", "fe80::1234", "unroutable"},
+	}
+
+	for i, tc := range testCases {
+		nip := net.ParseIP(tc.ip)
+		key := groupKeyFor(p2p.NewNetAddressIPPort(nip, 26656), true)
+		assert.Equal(t, tc.expKey, key, "#%d", i)
+	}
+}
+
 func assertMOldAndNNewAddrsInSelection(t *testing.T, m, n int, addrs []*p2p.NetAddress, book *addrBook) {
 	nOld, nNew := countOldAndNewAddrsInSelection(addrs, book)
 	assert.Equal(t, m, nOld, "old addresses")
@@ -607,13 +746,15 @@ func createAddrBookWithMOldAndNNewAddrs(t *testing.T, nOld, nNew int) (book *add
 
 	randAddrs := randNetAddressPairs(t, nOld)
 	for _, addr := range randAddrs {
-		book.AddAddress(addr.addr, addr.src)
+		err := book.AddAddress(addr.addr, addr.src)
+		require.NoError(t, err)
 		book.MarkGood(addr.addr.ID)
 	}
 
 	randAddrs = randNetAddressPairs(t, nNew)
 	for _, addr := range randAddrs {
-		book.AddAddress(addr.addr, addr.src)
+		err := book.AddAddress(addr.addr, addr.src)
+		require.NoError(t, err)
 	}
 
 	return

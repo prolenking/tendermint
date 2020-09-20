@@ -15,10 +15,11 @@ import (
 // report that a connection timeout occurred. This detects both fundamental
 // network timeouts, as well as ErrConnTimeout errors.
 func IsConnTimeout(err error) bool {
-	switch errors.Cause(err).(type) {
-	case EndpointTimeoutError:
+	_, ok := errors.Unwrap(err).(timeoutError)
+	switch {
+	case errors.As(err, &EndpointTimeoutError{}):
 		return true
-	case timeoutError:
+	case ok:
 		return true
 	default:
 		return false

@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -26,14 +25,18 @@ func TestPeerBasic(t *testing.T) {
 	// simulate remote peer
 	rp := &remotePeer{PrivKey: ed25519.GenPrivKey(), Config: cfg}
 	rp.Start()
-	defer rp.Stop()
+	t.Cleanup(rp.Stop)
 
 	p, err := createOutboundPeerAndPerformHandshake(rp.Addr(), cfg, tmconn.DefaultMConnConfig())
 	require.Nil(err)
 
 	err = p.Start()
 	require.Nil(err)
-	defer p.Stop()
+	t.Cleanup(func() {
+		if err := p.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
 
 	assert.True(p.IsRunning())
 	assert.True(p.IsOutbound())
@@ -52,7 +55,7 @@ func TestPeerSend(t *testing.T) {
 	// simulate remote peer
 	rp := &remotePeer{PrivKey: ed25519.GenPrivKey(), Config: config}
 	rp.Start()
-	defer rp.Stop()
+	t.Cleanup(rp.Stop)
 
 	p, err := createOutboundPeerAndPerformHandshake(rp.Addr(), config, tmconn.DefaultMConnConfig())
 	require.Nil(err)
@@ -60,7 +63,11 @@ func TestPeerSend(t *testing.T) {
 	err = p.Start()
 	require.Nil(err)
 
-	defer p.Stop()
+	t.Cleanup(func() {
+		if err := p.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
 
 	assert.True(p.CanSend(testCh))
 	assert.True(p.Send(testCh, []byte("Asylum")))
@@ -114,13 +121,13 @@ func testOutboundPeerConn(
 	var pc peerConn
 	conn, err := testDial(addr, config)
 	if err != nil {
-		return pc, errors.Wrap(err, "Error creating peer")
+		return pc, fmt.Errorf("error creating peer: %w", err)
 	}
 
 	pc, err = testPeerConn(conn, config, true, persistent, ourNodePrivKey, addr)
 	if err != nil {
 		if cerr := conn.Close(); cerr != nil {
-			return pc, errors.Wrap(err, cerr.Error())
+			return pc, fmt.Errorf("%v: %w", cerr.Error(), err)
 		}
 		return pc, err
 	}
@@ -128,7 +135,7 @@ func testOutboundPeerConn(
 	// ensure dialed ID matches connection ID
 	if addr.ID != pc.ID() {
 		if cerr := conn.Close(); cerr != nil {
-			return pc, errors.Wrap(err, cerr.Error())
+			return pc, fmt.Errorf("%v: %w", cerr.Error(), err)
 		}
 		return pc, ErrSwitchAuthenticationFailure{addr, pc.ID()}
 	}

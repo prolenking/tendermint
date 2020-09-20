@@ -9,6 +9,7 @@ import (
 
 	tmmath "github.com/tendermint/tendermint/libs/math"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
+	tmprotobits "github.com/tendermint/tendermint/proto/tendermint/libs/bits"
 )
 
 // BitArray is a thread-safe implementation of a bit array.
@@ -354,14 +355,12 @@ func (bA *BitArray) Update(o *BitArray) {
 	if bA == nil || o == nil {
 		return
 	}
+
 	bA.mtx.Lock()
 	o.mtx.Lock()
-	defer func() {
-		bA.mtx.Unlock()
-		o.mtx.Unlock()
-	}()
-
 	copy(bA.Elems, o.Elems)
+	o.mtx.Unlock()
+	bA.mtx.Unlock()
 }
 
 // MarshalJSON implements json.Marshaler interface by marshaling bit array
@@ -417,4 +416,29 @@ func (bA *BitArray) UnmarshalJSON(bz []byte) error {
 	}
 	*bA = *bA2 //nolint:govet
 	return nil
+}
+
+// ToProto converts BitArray to protobuf
+func (bA *BitArray) ToProto() *tmprotobits.BitArray {
+	if bA == nil || len(bA.Elems) == 0 {
+		return nil
+	}
+
+	return &tmprotobits.BitArray{
+		Bits:  int64(bA.Bits),
+		Elems: bA.Elems,
+	}
+}
+
+// FromProto sets a protobuf BitArray to the given pointer.
+func (bA *BitArray) FromProto(protoBitArray *tmprotobits.BitArray) {
+	if protoBitArray == nil {
+		bA = nil
+		return
+	}
+
+	bA.Bits = int(protoBitArray.Bits)
+	if len(protoBitArray.Elems) > 0 {
+		bA.Elems = protoBitArray.Elems
+	}
 }

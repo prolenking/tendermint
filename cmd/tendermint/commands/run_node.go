@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	cfg "github.com/tendermint/tendermint/config"
@@ -38,6 +37,9 @@ func AddNodeFlags(cmd *cobra.Command) {
 		"genesis_hash",
 		[]byte{},
 		"Optional SHA-256 hash of the genesis file")
+	cmd.Flags().Int64("consensus.double_sign_check_height", config.Consensus.DoubleSignCheckHeight,
+		"How many blocks to look back to check existence of the node's "+
+			"consensus votes before joining consensus")
 
 	// abci flags
 	cmd.Flags().String(
@@ -56,6 +58,7 @@ func AddNodeFlags(cmd *cobra.Command) {
 		config.RPC.GRPCListenAddress,
 		"GRPC listen address (BroadcastTx only). Port required")
 	cmd.Flags().Bool("rpc.unsafe", config.RPC.Unsafe, "Enabled unsafe rpc methods")
+	cmd.Flags().String("rpc.pprof_laddr", config.RPC.PprofListenAddress, "pprof listen address (https://golang.org/pkg/net/http/pprof)")
 
 	// p2p flags
 	cmd.Flags().String(
@@ -85,7 +88,7 @@ func AddNodeFlags(cmd *cobra.Command) {
 	cmd.Flags().String(
 		"db_backend",
 		config.DBBackend,
-		"Database backend: goleveldb | cleveldb | boltdb | rocksdb")
+		"Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb")
 	cmd.Flags().String(
 		"db_dir",
 		config.DBPath,
@@ -117,7 +120,9 @@ func NewRunNodeCmd(nodeProvider nm.Provider) *cobra.Command {
 			// Stop upon receiving SIGTERM or CTRL-C.
 			tmos.TrapSignal(logger, func() {
 				if n.IsRunning() {
-					n.Stop()
+					if err := n.Stop(); err != nil {
+						logger.Error("unable to stop the node", "error", err)
+					}
 				}
 			})
 
@@ -138,18 +143,18 @@ func checkGenesisHash(config *cfg.Config) error {
 	// Calculate SHA-256 hash of the genesis file.
 	f, err := os.Open(config.GenesisFile())
 	if err != nil {
-		return errors.Wrap(err, "can't open genesis file")
+		return fmt.Errorf("can't open genesis file: %w", err)
 	}
 	defer f.Close()
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
-		return errors.Wrap(err, "error when hashing genesis file")
+		return fmt.Errorf("error when hashing genesis file: %w", err)
 	}
 	actualHash := h.Sum(nil)
 
 	// Compare with the flag.
 	if !bytes.Equal(genesisHash, actualHash) {
-		return errors.Errorf(
+		return fmt.Errorf(
 			"--genesis_hash=%X does not match %s hash: %X",
 			genesisHash, config.GenesisFile(), actualHash)
 	}

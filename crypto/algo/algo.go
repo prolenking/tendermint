@@ -32,7 +32,7 @@ func GetPubKeyType() string {
 func GetPrivKeyBytes(privKey crypto.PrivKey) []byte {
 	switch Algo {
 	case ED25519:
-		key := privKey.(ed25519.PrivKeyEd25519)
+		key := privKey.(ed25519.PrivKey)
 		return key[:]
 
 	case SM2:
@@ -40,7 +40,7 @@ func GetPrivKeyBytes(privKey crypto.PrivKey) []byte {
 		return key[:]
 
 	default:
-		key := privKey.(ed25519.PrivKeyEd25519)
+		key := privKey.(ed25519.PrivKey)
 		return key[:]
 	}
 }
@@ -48,7 +48,7 @@ func GetPrivKeyBytes(privKey crypto.PrivKey) []byte {
 func GetPubKeyBytes(pubKey crypto.PubKey) []byte {
 	switch Algo {
 	case ED25519:
-		key := pubKey.(ed25519.PubKeyEd25519)
+		key := pubKey.(ed25519.PubKey)
 		return key[:]
 
 	case SM2:
@@ -56,7 +56,7 @@ func GetPubKeyBytes(pubKey crypto.PubKey) []byte {
 		return key[:]
 
 	default:
-		key := pubKey.(ed25519.PubKeyEd25519)
+		key := pubKey.(ed25519.PubKey)
 		return key[:]
 	}
 }
@@ -64,7 +64,7 @@ func GetPubKeyBytes(pubKey crypto.PubKey) []byte {
 func GetPubKeyFromData(keyType string, keyData []byte) crypto.PubKey {
 	switch Algo {
 	case ED25519:
-		pubkey := ed25519.PubKeyEd25519{}
+		pubkey := ed25519.PubKey{}
 		copy(pubkey[:], keyData)
 		return pubkey
 
@@ -74,7 +74,7 @@ func GetPubKeyFromData(keyType string, keyData []byte) crypto.PubKey {
 		return pubkey
 
 	default:
-		pubkey := ed25519.PubKeyEd25519{}
+		pubkey := ed25519.PubKey{}
 		copy(pubkey[:], keyData)
 		return pubkey
 	}
@@ -122,13 +122,13 @@ func GetPrivKeySize() int {
 func GetPubKeySize() int {
 	switch Algo {
 	case ED25519:
-		return ed25519.PubKeyEd25519Size
+		return ed25519.PubKeySize
 
 	case SM2:
 		return sm2.PubKeySize
 
 	default:
-		return ed25519.PubKeyEd25519Size
+		return ed25519.PubKeySize
 	}
 }
 
@@ -148,7 +148,7 @@ func GetSignatureSize() int {
 func VerifyPubKeyType(pubKey crypto.PubKey) bool {
 	switch Algo {
 	case ED25519:
-		if _, ok := pubKey.(ed25519.PubKeyEd25519); ok {
+		if _, ok := pubKey.(ed25519.PubKey); ok {
 			return true
 		}
 
@@ -164,7 +164,7 @@ func VerifyPubKeyType(pubKey crypto.PubKey) bool {
 func VerifyPrivKeyType(privKey crypto.PrivKey) bool {
 	switch Algo {
 	case ED25519:
-		if _, ok := privKey.(ed25519.PrivKeyEd25519); ok {
+		if _, ok := privKey.(ed25519.PrivKey); ok {
 			return true
 		}
 
