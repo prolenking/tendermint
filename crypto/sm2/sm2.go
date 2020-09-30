@@ -5,48 +5,47 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"fmt"
+	tmjson "github.com/tendermint/tendermint/libs/json"
 	"io"
 	"math/big"
 
 	"github.com/tjfoc/gmsm/sm2"
 
-	amino "github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/tmhash"
 )
 
 const (
-	PrivKeyAminoName = "tendermint/PrivKeySm2"
-	PubKeyAminoName  = "tendermint/PubKeySm2"
+	PrivKeyName = "tendermint/PrivKeySm2"
+	PubKeyName  = "tendermint/PubKeySm2"
 
 	PrivKeySize   = 32
 	PubKeySize    = 33
 	SignatureSize = 64
+
+	keyType = "sm2"
 )
 
+func init() {
+	tmjson.RegisterType(PubKeySm2{}, PubKeyName)
+	tmjson.RegisterType(PrivKeySm2{}, PrivKeyName)
+}
+
 type PrivKeySm2 [PrivKeySize]byte
+
+// Bytes returns the privkey byte format.
+func (privKey PrivKeySm2) Bytes() []byte {
+	return []byte(privKey[:])
+}
+
 type PubKeySm2 [PubKeySize]byte
+
+func (pubKey PubKeySm2) Type() string {
+	return keyType
+}
 
 var _ crypto.PrivKey = PrivKeySm2{}
 var _ crypto.PubKey = PubKeySm2{}
-
-// --------------------------------------------------------
-
-var cdc = amino.NewCodec()
-
-func init() {
-	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
-	cdc.RegisterConcrete(PubKeySm2{}, PubKeyAminoName, nil)
-
-	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
-	cdc.RegisterConcrete(PrivKeySm2{}, PrivKeyAminoName, nil)
-}
-
-// --------------------------------------------------------
-
-func (privKey PrivKeySm2) Bytes() []byte {
-	return cdc.MustMarshalBinaryBare(privKey)
-}
 
 func (privKey PrivKeySm2) Sign(msg []byte) ([]byte, error) {
 	priv := privKey.GetPrivateKey()
@@ -104,6 +103,10 @@ func (privKey PrivKeySm2) Equals(other crypto.PrivKey) bool {
 	return false
 }
 
+func (privKey PrivKeySm2) Type() string {
+	return keyType
+}
+
 func (privKey PrivKeySm2) GetPrivateKey() *sm2.PrivateKey {
 	k := new(big.Int).SetBytes(privKey[:32])
 	c := sm2.P256Sm2()
@@ -158,10 +161,10 @@ func (pubKey PubKeySm2) Address() crypto.Address {
 }
 
 func (pubKey PubKeySm2) Bytes() []byte {
-	return cdc.MustMarshalBinaryBare(pubKey)
+	return []byte(pubKey[:])
 }
 
-func (pubKey PubKeySm2) VerifyBytes(msg []byte, sig []byte) bool {
+func (pubKey PubKeySm2) VerifySignature(msg []byte, sig []byte) bool {
 	if len(sig) != SignatureSize {
 		return false
 	}

@@ -16,6 +16,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	tmnet "github.com/tendermint/tendermint/libs/net"
 	tmos "github.com/tendermint/tendermint/libs/os"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
 )
 
@@ -34,7 +35,7 @@ const (
 	ErrTestSignVoteFailed                 // 10
 )
 
-var voteTypes = []types.SignedMsgType{types.PrevoteType, types.PrecommitType}
+var voteTypes = []tmproto.SignedMsgType{tmproto.PrevoteType, tmproto.PrecommitType}
 
 // TestHarnessError allows us to keep track of which exit code should be used
 // when exiting the main program.
@@ -107,7 +108,7 @@ func NewTestHarness(logger log.Logger, cfg TestHarnessConfig) (*TestHarness, err
 		return nil, newTestHarnessError(ErrFailedToCreateListener, err, "")
 	}
 
-	signerClient, err := privval.NewSignerClient(spv)
+	signerClient, err := privval.NewSignerClient(spv, st.ChainID)
 	if err != nil {
 		return nil, newTestHarnessError(ErrFailedToCreateListener, err, "")
 	}
@@ -200,7 +201,7 @@ func (th *TestHarness) TestPublicKey() error {
 		return err
 	}
 	th.logger.Info("Remote", "pubKey", sck)
-	if fpvk != sck {
+	if !bytes.Equal(fpvk.Bytes(), sck.Bytes()) {
 		th.logger.Error("FAILED: Local and remote public keys do not match")
 		return newTestHarnessError(ErrTestPublicKeyFailed, nil, "")
 	}
@@ -214,24 +215,26 @@ func (th *TestHarness) TestSignProposal() error {
 	// sha256 hash of "hash"
 	hash := tmhash.Sum([]byte("hash"))
 	prop := &types.Proposal{
-		Type:     types.ProposalType,
+		Type:     tmproto.ProposalType,
 		Height:   100,
 		Round:    0,
 		POLRound: -1,
 		BlockID: types.BlockID{
 			Hash: hash,
-			PartsHeader: types.PartSetHeader{
+			PartSetHeader: types.PartSetHeader{
 				Hash:  hash,
 				Total: 1000000,
 			},
 		},
 		Timestamp: time.Now(),
 	}
-	propBytes := prop.SignBytes(th.chainID)
-	if err := th.signerClient.SignProposal(th.chainID, prop); err != nil {
+	p := prop.ToProto()
+	propBytes := types.ProposalSignBytes(th.chainID, p)
+	if err := th.signerClient.SignProposal(th.chainID, p); err != nil {
 		th.logger.Error("FAILED: Signing of proposal", "err", err)
 		return newTestHarnessError(ErrTestSignProposalFailed, err, "")
 	}
+	prop.Signature = p.Signature
 	th.logger.Debug("Signed proposal", "prop", prop)
 	// first check that it's a basically valid proposal
 	if err := prop.ValidateBasic(); err != nil {
@@ -243,7 +246,7 @@ func (th *TestHarness) TestSignProposal() error {
 		return err
 	}
 	// now validate the signature on the proposal
-	if sck.VerifyBytes(propBytes, prop.Signature) {
+	if sck.VerifySignature(propBytes, prop.Signature) {
 		th.logger.Info("Successfully validated proposal signature")
 	} else {
 		th.logger.Error("FAILED: Proposal signature validation failed")
@@ -265,7 +268,7 @@ func (th *TestHarness) TestSignVote() error {
 			Round:  0,
 			BlockID: types.BlockID{
 				Hash: hash,
-				PartsHeader: types.PartSetHeader{
+				PartSetHeader: types.PartSetHeader{
 					Hash:  hash,
 					Total: 1000000,
 				},
@@ -274,12 +277,14 @@ func (th *TestHarness) TestSignVote() error {
 			ValidatorAddress: tmhash.SumTruncated([]byte("addr")),
 			Timestamp:        time.Now(),
 		}
-		voteBytes := vote.SignBytes(th.chainID)
+		v := vote.ToProto()
+		voteBytes := types.VoteSignBytes(th.chainID, v)
 		// sign the vote
-		if err := th.signerClient.SignVote(th.chainID, vote); err != nil {
+		if err := th.signerClient.SignVote(th.chainID, v); err != nil {
 			th.logger.Error("FAILED: Signing of vote", "err", err)
 			return newTestHarnessError(ErrTestSignVoteFailed, err, fmt.Sprintf("voteType=%d", voteType))
 		}
+		vote.Signature = v.Signature
 		th.logger.Debug("Signed vote", "vote", vote)
 		// validate the contents of the vote
 		if err := vote.ValidateBasic(); err != nil {
@@ -292,7 +297,7 @@ func (th *TestHarness) TestSignVote() error {
 		}
 
 		// now validate the signature on the proposal
-		if sck.VerifyBytes(voteBytes, vote.Signature) {
+		if sck.VerifySignature(voteBytes, vote.Signature) {
 			th.logger.Info("Successfully validated vote signature", "type", voteType)
 		} else {
 			th.logger.Error("FAILED: Vote signature validation failed", "type", voteType)

@@ -1,6 +1,8 @@
 package mempool
 
 import (
+	"encoding/hex"
+	"errors"
 	"net"
 	"sync"
 	"testing"
@@ -8,16 +10,22 @@ import (
 
 	"github.com/fortytw2/leaktest"
 	"github.com/go-kit/kit/log/term"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/tendermint/tendermint/abci/example/kvstore"
 	cfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/p2p/mock"
+	memproto "github.com/tendermint/tendermint/proto/tendermint/mempool"
 	"github.com/tendermint/tendermint/proxy"
 	"github.com/tendermint/tendermint/types"
+)
+
+const (
+	numTxs  = 1000
+	timeout = 120 * time.Second // ridiculously high because CircleCI is slow
 )
 
 type peerState struct {
@@ -26,6 +34,151 @@ type peerState struct {
 
 func (ps peerState) GetHeight() int64 {
 	return ps.height
+}
+
+// Send a bunch of txs to the first reactor's mempool and wait for them all to
+// be received in the others.
+func TestReactorBroadcastTxMessage(t *testing.T) {
+	config := cfg.TestConfig()
+	// if there were more than two reactors, the order of transactions could not be
+	// asserted in waitForTxsOnReactors (due to transactions gossiping). If we
+	// replace Connect2Switches (full mesh) with a func, which connects first
+	// reactor to others and nothing else, this test should also pass with >2 reactors.
+	const N = 2
+	reactors := makeAndConnectReactors(config, N)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				assert.NoError(t, err)
+			}
+		}
+	}()
+	for _, r := range reactors {
+		for _, peer := range r.Switch.Peers().List() {
+			peer.Set(types.PeerStateKey, peerState{1})
+		}
+	}
+
+	txs := checkTxs(t, reactors[0].mempool, numTxs, UnknownPeerID)
+	waitForTxsOnReactors(t, txs, reactors)
+}
+
+// Send a bunch of txs to the first reactor's mempool, claiming it came from peer
+// ensure peer gets no txs.
+func TestReactorNoBroadcastToSender(t *testing.T) {
+	config := cfg.TestConfig()
+	const N = 2
+	reactors := makeAndConnectReactors(config, N)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				assert.NoError(t, err)
+			}
+		}
+	}()
+
+	const peerID = 1
+	checkTxs(t, reactors[0].mempool, numTxs, peerID)
+	ensureNoTxs(t, reactors[peerID], 100*time.Millisecond)
+}
+
+func TestBroadcastTxForPeerStopsWhenPeerStops(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
+	config := cfg.TestConfig()
+	const N = 2
+	reactors := makeAndConnectReactors(config, N)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				assert.NoError(t, err)
+			}
+		}
+	}()
+
+	// stop peer
+	sw := reactors[1].Switch
+	sw.StopPeerForError(sw.Peers().List()[0], errors.New("some reason"))
+
+	// check that we are not leaking any go-routines
+	// i.e. broadcastTxRoutine finishes when peer is stopped
+	leaktest.CheckTimeout(t, 10*time.Second)()
+}
+
+func TestBroadcastTxForPeerStopsWhenReactorStops(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
+	config := cfg.TestConfig()
+	const N = 2
+	reactors := makeAndConnectReactors(config, N)
+
+	// stop reactors
+	for _, r := range reactors {
+		if err := r.Stop(); err != nil {
+			assert.NoError(t, err)
+		}
+	}
+
+	// check that we are not leaking any go-routines
+	// i.e. broadcastTxRoutine finishes when reactor is stopped
+	leaktest.CheckTimeout(t, 10*time.Second)()
+}
+
+func TestMempoolIDsBasic(t *testing.T) {
+	ids := newMempoolIDs()
+
+	peer := mock.NewPeer(net.IP{127, 0, 0, 1})
+
+	ids.ReserveForPeer(peer)
+	assert.EqualValues(t, 1, ids.GetForPeer(peer))
+	ids.Reclaim(peer)
+
+	ids.ReserveForPeer(peer)
+	assert.EqualValues(t, 2, ids.GetForPeer(peer))
+	ids.Reclaim(peer)
+}
+
+func TestMempoolIDsPanicsIfNodeRequestsOvermaxActiveIDs(t *testing.T) {
+	if testing.Short() {
+		return
+	}
+
+	// 0 is already reserved for UnknownPeerID
+	ids := newMempoolIDs()
+
+	for i := 0; i < maxActiveIDs-1; i++ {
+		peer := mock.NewPeer(net.IP{127, 0, 0, 1})
+		ids.ReserveForPeer(peer)
+	}
+
+	assert.Panics(t, func() {
+		peer := mock.NewPeer(net.IP{127, 0, 0, 1})
+		ids.ReserveForPeer(peer)
+	})
+}
+
+func TestDontExhaustMaxActiveIDs(t *testing.T) {
+	config := cfg.TestConfig()
+	const N = 1
+	reactors := makeAndConnectReactors(config, N)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				assert.NoError(t, err)
+			}
+		}
+	}()
+	reactor := reactors[0]
+
+	for i := 0; i < maxActiveIDs+1; i++ {
+		peer := mock.NewPeer(nil)
+		reactor.Receive(MempoolChannel, peer, []byte{0x1, 0x2, 0x3})
+		reactor.AddPeer(peer)
+	}
 }
 
 // mempoolLogger is a TestingLogger which uses a different
@@ -80,7 +233,7 @@ func waitForTxsOnReactors(t *testing.T, txs types.Txs, reactors []*Reactor) {
 		close(done)
 	}()
 
-	timer := time.After(Timeout)
+	timer := time.After(timeout)
 	select {
 	case <-timer:
 		t.Fatal("Timed out waiting for txs")
@@ -107,137 +260,29 @@ func ensureNoTxs(t *testing.T, reactor *Reactor, timeout time.Duration) {
 	assert.Zero(t, reactor.mempool.Size())
 }
 
-const (
-	NumTxs  = 1000
-	Timeout = 120 * time.Second // ridiculously high because CircleCI is slow
-)
+func TestMempoolVectors(t *testing.T) {
 
-func TestReactorBroadcastTxMessage(t *testing.T) {
-	config := cfg.TestConfig()
-	const N = 4
-	reactors := makeAndConnectReactors(config, N)
-	defer func() {
-		for _, r := range reactors {
-			r.Stop()
+	testCases := []struct {
+		testName string
+		tx       []byte
+		expBytes string
+	}{
+		{"tx 1", []byte{123}, "0a030a017b"},
+		{"tx 2", []byte("proto encoding in mempool"), "0a1b0a1970726f746f20656e636f64696e6720696e206d656d706f6f6c"},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		msg := memproto.Message{
+			Sum: &memproto.Message_Tx{
+				Tx: &memproto.Tx{Tx: tc.tx},
+			},
 		}
-	}()
-	for _, r := range reactors {
-		for _, peer := range r.Switch.Peers().List() {
-			peer.Set(types.PeerStateKey, peerState{1})
-		}
+		bz, err := msg.Marshal()
+		require.NoError(t, err, tc.testName)
+
+		require.Equal(t, tc.expBytes, hex.EncodeToString(bz), tc.testName)
 	}
 
-	// send a bunch of txs to the first reactor's mempool
-	// and wait for them all to be received in the others
-	txs := checkTxs(t, reactors[0].mempool, NumTxs, UnknownPeerID)
-	waitForTxsOnReactors(t, txs, reactors)
-}
-
-func TestReactorNoBroadcastToSender(t *testing.T) {
-	config := cfg.TestConfig()
-	const N = 2
-	reactors := makeAndConnectReactors(config, N)
-	defer func() {
-		for _, r := range reactors {
-			r.Stop()
-		}
-	}()
-
-	// send a bunch of txs to the first reactor's mempool, claiming it came from peer
-	// ensure peer gets no txs
-	checkTxs(t, reactors[0].mempool, NumTxs, 1)
-	ensureNoTxs(t, reactors[1], 100*time.Millisecond)
-}
-
-func TestBroadcastTxForPeerStopsWhenPeerStops(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode.")
-	}
-
-	config := cfg.TestConfig()
-	const N = 2
-	reactors := makeAndConnectReactors(config, N)
-	defer func() {
-		for _, r := range reactors {
-			r.Stop()
-		}
-	}()
-
-	// stop peer
-	sw := reactors[1].Switch
-	sw.StopPeerForError(sw.Peers().List()[0], errors.New("some reason"))
-
-	// check that we are not leaking any go-routines
-	// i.e. broadcastTxRoutine finishes when peer is stopped
-	leaktest.CheckTimeout(t, 10*time.Second)()
-}
-
-func TestBroadcastTxForPeerStopsWhenReactorStops(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode.")
-	}
-
-	config := cfg.TestConfig()
-	const N = 2
-	reactors := makeAndConnectReactors(config, N)
-
-	// stop reactors
-	for _, r := range reactors {
-		r.Stop()
-	}
-
-	// check that we are not leaking any go-routines
-	// i.e. broadcastTxRoutine finishes when reactor is stopped
-	leaktest.CheckTimeout(t, 10*time.Second)()
-}
-
-func TestMempoolIDsBasic(t *testing.T) {
-	ids := newMempoolIDs()
-
-	peer := mock.NewPeer(net.IP{127, 0, 0, 1})
-
-	ids.ReserveForPeer(peer)
-	assert.EqualValues(t, 1, ids.GetForPeer(peer))
-	ids.Reclaim(peer)
-
-	ids.ReserveForPeer(peer)
-	assert.EqualValues(t, 2, ids.GetForPeer(peer))
-	ids.Reclaim(peer)
-}
-
-func TestMempoolIDsPanicsIfNodeRequestsOvermaxActiveIDs(t *testing.T) {
-	if testing.Short() {
-		return
-	}
-
-	// 0 is already reserved for UnknownPeerID
-	ids := newMempoolIDs()
-
-	for i := 0; i < maxActiveIDs-1; i++ {
-		peer := mock.NewPeer(net.IP{127, 0, 0, 1})
-		ids.ReserveForPeer(peer)
-	}
-
-	assert.Panics(t, func() {
-		peer := mock.NewPeer(net.IP{127, 0, 0, 1})
-		ids.ReserveForPeer(peer)
-	})
-}
-
-func TestDontExhaustMaxActiveIDs(t *testing.T) {
-	config := cfg.TestConfig()
-	const N = 1
-	reactors := makeAndConnectReactors(config, N)
-	defer func() {
-		for _, r := range reactors {
-			r.Stop()
-		}
-	}()
-	reactor := reactors[0]
-
-	for i := 0; i < maxActiveIDs+1; i++ {
-		peer := mock.NewPeer(nil)
-		reactor.Receive(MempoolChannel, peer, []byte{0x1, 0x2, 0x3})
-		reactor.AddPeer(peer)
-	}
 }

@@ -110,6 +110,10 @@ func (state *pcState) purgePeer(peerID p2p.ID) {
 // handle processes FSM events
 func (state *pcState) handle(event Event) (Event, error) {
 	switch event := event.(type) {
+	case bcResetState:
+		state.context.setState(event.state)
+		return noOp, nil
+
 	case scFinishedEv:
 		if state.synced() {
 			return pcFinished{tmState: state.context.tmState(), blocksSynced: state.blocksSynced}, nil
@@ -144,8 +148,8 @@ func (state *pcState) handle(event Event) (Event, error) {
 		first, second := firstItem.block, secondItem.block
 
 		firstParts := first.MakePartSet(types.BlockPartSizeBytes)
-		firstPartsHeader := firstParts.Header()
-		firstID := types.BlockID{Hash: first.Hash(), PartsHeader: firstPartsHeader}
+		firstPartSetHeader := firstParts.Header()
+		firstID := types.BlockID{Hash: first.Hash(), PartSetHeader: firstPartSetHeader}
 
 		err = state.context.verifyCommit(tmState.ChainID, firstID, first.Height, second.LastCommit)
 		if err != nil {
