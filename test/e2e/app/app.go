@@ -199,7 +199,7 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 		if err != nil {
 			return nil, fmt.Errorf("invalid base64 pubkey value %q: %w", keyString, err)
 		}
-		valUpdates = append(valUpdates, abci.Ed25519ValidatorUpdate(keyBytes, int64(power)))
+		valUpdates = append(valUpdates, abci.NewValidatorUpdate(keyBytes, int64(power)))
 	}
 	return valUpdates, nil
 }
