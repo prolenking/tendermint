@@ -95,11 +95,11 @@ proto-format:
 .PHONY: proto-format
 
 proto-check-breaking:
-	@$(DOCKER_BUF) check breaking --against-input .git#branch=irita
+	@$(DOCKER_BUF) check breaking --against-input .git#branch=irita-v0.34.0-rc5
 .PHONY: proto-check-breaking
 
 proto-check-breaking-ci:
-	@$(DOCKER_BUF) check breaking --against-input $(HTTPS_GIT)#branch=irita
+	@$(DOCKER_BUF) check breaking --against-input $(HTTPS_GIT)#branch=irita-v0.34.0-rc5
 .PHONY: proto-check-breaking-ci
 
 ###############################################################################
