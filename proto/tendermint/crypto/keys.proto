@@ -12,5 +12,6 @@ message PublicKey {
 
   oneof sum {
     bytes ed25519 = 1;
+    bytes sm2 = 2;
   }
 }
