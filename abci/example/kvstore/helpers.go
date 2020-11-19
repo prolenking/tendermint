@@ -2,15 +2,16 @@ package kvstore
 
 import (
 	"github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/crypto/algo"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 // RandVal creates one random validator, with a key derived
 // from the input value
 func RandVal(i int) types.ValidatorUpdate {
-	pubkey := tmrand.Bytes(32)
+	pubkey := tmrand.Bytes(algo.GetPubKeySize())
 	power := tmrand.Uint16() + 1
-	v := types.Ed25519ValidatorUpdate(pubkey, int64(power))
+	v := types.NewValidatorUpdate(pubkey, int64(power))
 	return v
 }
 

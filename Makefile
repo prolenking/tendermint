@@ -5,7 +5,7 @@ BUILD_TAGS?=tendermint
 VERSION := $(shell git describe --always)
 LD_FLAGS = -X github.com/tendermint/tendermint/version.TMCoreSemVer=$(VERSION)
 BUILD_FLAGS = -mod=readonly -ldflags "$(LD_FLAGS)"
-HTTPS_GIT := https://github.com/tendermint/tendermint.git
+HTTPS_GIT := https://github.com/bianjieai/tendermint.git
 DOCKER_BUF := docker run -v $(shell pwd):/workspace --workdir /workspace bufbuild/buf
 CGO_ENABLED ?= 0
 
@@ -96,11 +96,11 @@ proto-format:
 .PHONY: proto-format
 
 proto-check-breaking:
-	@$(DOCKER_BUF) check breaking --against-input .git#branch=master
+	@$(DOCKER_BUF) check breaking --against-input .git#branch=irita
 .PHONY: proto-check-breaking
 
 proto-check-breaking-ci:
-	@$(DOCKER_BUF) check breaking --against-input $(HTTPS_GIT)#branch=master
+	@$(DOCKER_BUF) check breaking --against-input $(HTTPS_GIT)#branch=irita
 .PHONY: proto-check-breaking-ci
 
 ###############################################################################
