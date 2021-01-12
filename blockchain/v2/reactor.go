@@ -459,7 +459,7 @@ func (r *BlockchainReactor) Receive(chID byte, src p2p.Peer, msgBytes []byte) {
 	msg, err := bc.DecodeMsg(msgBytes)
 	if err != nil {
 		r.logger.Error("error decoding message",
-			"src", src.ID(), "chId", chID, "msg", msg, "err", err, "bytes", msgBytes)
+			"src", src.ID(), "chId", chID, "msg", msg, "err", err)
 		_ = r.reporter.Report(behaviour.BadMessage(src.ID(), err.Error()))
 		return
 	}
@@ -555,7 +555,7 @@ func (r *BlockchainReactor) GetChannels() []*p2p.ChannelDescriptor {
 	return []*p2p.ChannelDescriptor{
 		{
 			ID:                  BlockchainChannel,
-			Priority:            10,
+			Priority:            5,
 			SendQueueCapacity:   2000,
 			RecvBufferCapacity:  50 * 4096,
 			RecvMessageCapacity: bc.MaxMsgSize,
