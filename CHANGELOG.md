@@ -1,5 +1,122 @@
 # Changelog
 
+## v0.34.8
+
+*February 25, 2021*
+
+This release, in conjunction with [a fix in the Cosmos SDK](https://github.com/cosmos/cosmos-sdk/pull/8641),
+introduces changes that should mean the logs are much, much quieter. 🎉
+
+Friendly reminder: We have a [bug bounty program](https://hackerone.com/tendermint).
+
+### IMPROVEMENTS
+
+- [libs/log] [\#6174](https://github.com/tendermint/tendermint/issues/6174) Include timestamp (`ts` field; `time.RFC3339Nano` format) in JSON logger output (@melekes)
+
+### BUG FIXES
+
+- [abci] [\#6124](https://github.com/tendermint/tendermint/issues/6124) Fixes a panic condition during callback execution in `ReCheckTx` during high tx load. (@alexanderbez)
+
+## v0.34.7
+
+*February 18, 2021*
+
+This release fixes a downstream security issue which impacts Cosmos SDK
+users who are:
+
+* Using Cosmos SDK v0.40.0 or later, AND
+* Running validator nodes, AND
+* Using the file-based `FilePV` implementation for their consensus keys
+
+Users who fulfill all the above criteria were susceptible to leaking
+private key material in the logs. All other users are unaffected.
+
+The root cause was a discrepancy
+between the Tendermint Core (untyped) logger and the Cosmos SDK (typed) logger:
+Tendermint Core's logger automatically stringifies Go interfaces whenever possible;
+however, the Cosmos SDK's logger uses reflection to log the fields within a Go interface.
+
+The introduction of the typed logger meant that previously un-logged fields within
+interfaces are now sometimes logged, including the private key material inside the
+`FilePV` struct.
+
+Tendermint Core v0.34.7 fixes this issue; however, we strongly recommend that all validators
+use remote signer implementations instead of `FilePV` in production.
+
+Thank you to @joe-bowman for his assistance with this vulnerability and a particular
+shout-out to @marbar3778 for diagnosing it quickly.
+
+Friendly reminder: We have a [bug bounty program](https://hackerone.com/tendermint).
+
+### BUG FIXES
+
+- [consensus] [\#6128](https://github.com/tendermint/tendermint/pull/6128) Remove privValidator from log call (@tessr)
+
+## v0.34.6
+
+*February 18, 2021*
+
+_Tendermint Core v0.34.5 and v0.34.6 have been recalled due to build tooling problems._
+
+## v0.34.4
+
+*February 11, 2021*
+
+This release includes a fix for a memory leak in the evidence reactor (see #6068, below).
+All Tendermint clients are recommended to upgrade.
+Thank you to our friends at Crypto.com for the initial report of this memory leak!
+
+Special thanks to other external contributors on this release: @yayajacky, @odidev, @laniehei, and @c29r3!
+
+Friendly reminder: We have a [bug bounty program](https://hackerone.com/tendermint).
+
+### BUG FIXES
+
+- [light] [\#6022](https://github.com/tendermint/tendermint/pull/6022) Fix a bug when the number of validators equals 100 (@melekes)
+- [light] [\#6026](https://github.com/tendermint/tendermint/pull/6026) Fix a bug when height isn't provided for the rpc calls: `/commit` and `/validators` (@cmwaters)
+- [evidence] [\#6068](https://github.com/tendermint/tendermint/pull/6068) Terminate broadcastEvidenceRoutine when peer is stopped (@melekes)
+
+
+## v0.34.3
+
+*January 19, 2021*
+
+This release includes a fix for a high-severity security vulnerability,
+a DoS-vector that impacted Tendermint Core v0.34.0-v0.34.2. For more details, see
+[Security Advisory Mulberry](https://github.com/tendermint/tendermint/security/advisories/GHSA-p658-8693-mhvg)
+or https://nvd.nist.gov/vuln/detail/CVE-2021-21271.
+
+Tendermint Core v0.34.3 also updates GoGo Protobuf to 1.3.2 in order to pick up the fix for
+https://nvd.nist.gov/vuln/detail/CVE-2021-3121.
+
+Friendly reminder: We have a [bug bounty program](https://hackerone.com/tendermint).
+
+### BUG FIXES
+
+- [evidence] [[security fix]](https://github.com/tendermint/tendermint/security/advisories/GHSA-p658-8693-mhvg) Use correct source of evidence time (@cmwaters)
+- [proto] [\#5886](https://github.com/tendermint/tendermint/pull/5889) Bump gogoproto to 1.3.2 (@marbar3778)
+
+## v0.34.2
+
+*January 12, 2021*
+
+This release fixes a substantial bug in evidence handling where evidence could
+sometimes be broadcast before the block containing that evidence was fully committed,
+resulting in some nodes panicking when trying to verify said evidence.
+
+Friendly reminder, we have a [bug bounty program](https://hackerone.com/tendermint).
+
+### BREAKING CHANGES
+
+- Go API
+  - [libs/os] [\#5871](https://github.com/tendermint/tendermint/issues/5871) `EnsureDir` now propagates IO errors and checks the file type (@erikgrinaker)
+
+### BUG FIXES
+
+- [evidence] [\#5890](https://github.com/tendermint/tendermint/pull/5890) Add a buffer to evidence from consensus to avoid broadcasting and proposing evidence before the
+  height of such an evidence has finished (@cmwaters)
+- [statesync] [\#5889](https://github.com/tendermint/tendermint/issues/5889) Set `LastHeightConsensusParamsChanged` when bootstrapping Tendermint state (@cmwaters)
+
 ## v0.34.1
 
 *January 6, 2021*
